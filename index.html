@@ -179,4 +179,213 @@
     { id:"plate-3", svg:"graphs/Platelet_blockers.svg", condition:"Abnormal platelet function / antiplatelet agent",
       description:"After prolonged bypass support, diffuse oozing is noted from line sites and incisions. Laboratory tests are inconclusive. The perfusionist requests viscoelastic analysis to assess contribution from platelets to clot firmness.",
       teg:{R:7, K:1.6, alpha:60, MA:35, LY30:2},
-      rotem:{CT:
+      rotem:{CT:68, CFT:145, alpha:61, MCF:33, LI30:97},
+      therapies:["platelets"]
+    }
+  ];
+
+  // state
+  var order = shuffled(CASES.map(function(_,i){ return i; }));
+  var ptr = 0;
+
+  function render(){
+    var main = document.getElementById("main");
+    if(ptr >= order.length){
+      main.innerHTML =
+        '<div class="done">' +
+          '<h2>All ' + CASES.length + ' scenarios completed 🎉</h2>' +
+          '<p>Final score: <b>' + getScore().right + '/' + getScore().total + '</b></p>' +
+          '<div class="row" style="margin-top:8px">' +
+            '<button class="btn" id="restartBtn">Restart (reshuffle)</button>' +
+          '</div>' +
+        '</div>';
+      document.getElementById("restartBtn").onclick = function(){
+        order = shuffled(CASES.map(function(_,i){ return i; }));
+        ptr = 0; setScore(0,0); document.getElementById("score").textContent = "Score: 0/0"; render();
+      };
+      return;
+    }
+
+    var c = CASES[order[ptr]];
+    var condButtons = CONDITIONS.map(function(n){ return '<button class="btn" data-cond="'+n+'">'+n+'</button>'; }).join('');
+    var txButtons = Object.keys(THERAPIES).map(function(k){ return '<button class="btn" data-tx="'+k+'">'+THERAPIES[k]+'</button>'; }).join('');
+
+    main.innerHTML =
+      '<div class="grid">' +
+        '<div class="card">' +
+          '<div class="row" style="justify-content:space-between">' +
+            '<div>' +
+              '<div class="muted" style="text-transform:uppercase;font-size:12px">Case</div>' +
+              '<div class="title">Interpret this viscoelastic profile</div>' +
+              '<div class="muted" style="margin-top:2px">'+ c.description +'</div>' +
+            '</div>' +
+            '<div class="row"><span class="pill">Progress ' + (ptr+1) + '/' + CASES.length + '</span></div>' +
+          '</div>' +
+
+          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start;margin-top:12px">' +
+            '<div>' +
+              '<div class="muted" style="text-transform:uppercase;font-size:12px;margin-bottom:6px">Trace (SVG)</div>' +
+              '<div class="trace-wrap"><img id="trace" class="trace" alt="' + c.id + ' viscoelastic trace" src="' + c.svg + '"></div>' +
+              '<div id="imgErr" class="error" style="display:none"></div>' +
+            '</div>' +
+
+            '<div>' +
+              '<div class="row"><button id="toggleParams" class="btn">Show parameters</button></div>' +
+              '<div id="params" class="params" style="display:none">' +
+                '<div class="muted" style="margin-bottom:6px">TEG (min/deg/mm, %)</div>' +
+                '<table>' +
+                  '<tr><th>R</th><th>K</th><th>α</th><th>MA</th><th>LY30</th></tr>' +
+                  '<tr><td>'+c.teg.R+'</td><td>'+c.teg.K+'</td><td>'+c.teg.alpha+'</td><td>'+c.teg.MA+'</td><td>'+c.teg.LY30+'</td></tr>' +
+                '</table>' +
+                '<div class="muted" style="margin:8px 0 6px">ROTEM (s/deg/mm, %)</div>' +
+                '<table>' +
+                  '<tr><th>CT</th><th>CFT</th><th>α</th><th>MCF</th><th>LI30</th></tr>' +
+                  '<tr><td>'+c.rotem.CT+'</td><td>'+c.rotem.CFT+'</td><td>'+c.rotem.alpha+'</td><td>'+c.rotem.MCF+'</td><td>'+c.rotem.LI30+'</td></tr>' +
+                '</table>' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+
+          '<div style="margin-top:12px">' +
+            '<div class="muted" style="text-transform:uppercase;font-size:12px;margin-bottom:6px">1) Which condition?</div>' +
+            '<div class="choices" id="condChoices">' + condButtons + '</div>' +
+
+            '<div class="muted" style="text-transform:uppercase;font-size:12px;margin:12px 0 6px">2) Select treatment(s)</div>' +
+            '<div class="choices" id="txChoices">' + txButtons + '</div>' +
+
+            '<div class="row" style="margin-top:10px">' +
+              '<button id="backBtn" class="btn">Back</button>' +
+              '<button id="checkBtn" class="btn">Check</button>' +
+              '<button id="nextBtn" class="btn primary">Next</button>' +
+            '</div>' +
+
+            '<div id="result" class="result" style="display:none"></div>' +
+          '</div>' +
+        '</div>' +
+
+        '<div class="card">' +
+          '<div class="row" style="justify-content:space-between">' +
+            '<div style="font-weight:700">Reference & Notes</div>' +
+            '<button id="toggleNotes" class="btn">Hide</button>' +
+          '</div>' +
+          '<div id="notesBox" style="display:block;margin-top:8px">' +
+            '<div style="font-weight:700;margin:6px 0 4px">Normal values (simplified)</div>' +
+            '<table style="margin-bottom:8px">' +
+              '<tr><th colspan="5" style="text-align:left">TEG</th></tr>' +
+              '<tr><th>R (min)</th><th>K (min)</th><th>α (deg)</th><th>MA (mm)</th><th>LY30 (%)</th></tr>' +
+              '<tr>' +
+                '<td>'+NORMALS.TEG.R[0]+'–'+NORMALS.TEG.R[1]+'</td>' +
+                '<td>'+NORMALS.TEG.K[0]+'–'+NORMALS.TEG.K[1]+'</td>' +
+                '<td>'+NORMALS.TEG.alpha[0]+'–'+NORMALS.TEG.alpha[1]+'</td>' +
+                '<td>'+NORMALS.TEG.MA[0]+'–'+NORMALS.TEG.MA[1]+'</td>' +
+                '<td>'+NORMALS.TEG.LY30[0]+'–'+NORMALS.TEG.LY30[1]+'</td>' +
+              '</tr>' +
+            '</table>' +
+            '<table>' +
+              '<tr><th colspan="5" style="text-align:left">ROTEM</th></tr>' +
+              '<tr><th>CT (s)</th><th>CFT (s)</th><th>α (deg)</th><th>MCF (mm)</th><th>LI30 (%)</th></tr>' +
+              '<tr>' +
+                '<td>'+NORMALS.ROTEM.CT[0]+'–'+NORMALS.ROTEM.CT[1]+'</td>' +
+                '<td>'+NORMALS.ROTEM.CFT[0]+'–'+NORMALS.ROTEM.CFT[1]+'</td>' +
+                '<td>'+NORMALS.ROTEM.alpha[0]+'–'+NORMALS.ROTEM.alpha[1]+'</td>' +
+                '<td>'+NORMALS.ROTEM.MCF[0]+'–'+NORMALS.ROTEM.MCF[1]+'</td>' +
+                '<td>'+NORMALS.ROTEM.LI30[0]+'–'+NORMALS.ROTEM.LI30[1]+'</td>' +
+              '</tr>' +
+            '</table>' +
+            <ul class="muted" style="margin:10px 0 0 18px;line-height:1.4">
+              <li><b>R/CT ↑</b> → Plasma (coagulation factors).</li>
+              <li><b>K/CFT ↑ or α ↓</b> → Fibrinogen (cryo or concentrate).</li>
+              <li><b>MA/MCF ↓</b> → Platelets.</li>
+              <li><b>LY30 ↑ / LI30 ↓</b> → Consider antifibrinolytic (TXA) when appropriate.</li>
+            </ul>
+            <div class="muted" style="margin-top:10px;font-size:12px">Educational tool only; not for clinical decision-making.</div>
+          </div>
+        </div>' +
+      '</div>';
+
+    // image error
+    var img = document.getElementById("trace");
+    img.onerror = function(){
+      var e = document.getElementById("imgErr");
+      e.style.display = "block";
+      e.textContent = "Could not load " + c.svg + ". Check filename and graphs/ folder.";
+    };
+
+    // toggles
+    document.getElementById("toggleParams").onclick = function(){
+      var pane = document.getElementById("params");
+      var open = pane.style.display !== "none";
+      pane.style.display = open ? "none" : "block";
+      this.textContent = open ? "Show parameters" : "Hide parameters";
+    };
+    document.getElementById("toggleNotes").onclick = function(){
+      var box = document.getElementById("notesBox");
+      var open = box.style.display !== "none";
+      box.style.display = open ? "none" : "block";
+      this.textContent = open ? "Show" : "Hide";
+    };
+
+    // back/next/check
+    var backBtn = document.getElementById("backBtn");
+    backBtn.disabled = (ptr === 0);
+    backBtn.onclick = function(){ if(ptr>0){ ptr--; render(); } };
+    document.getElementById("nextBtn").onclick = function(){ ptr++; render(); };
+    document.getElementById("checkBtn").onclick = function(){ check(c); };
+
+    // answers (ARIA-pressed for accessibility)
+    Array.prototype.forEach.call(document.getElementById("condChoices").children, function(btn){
+      btn.setAttribute('aria-pressed', 'false');
+      btn.addEventListener("click", function(){
+        Array.prototype.forEach.call(document.getElementById("condChoices").children, function(b){
+          b.classList.remove("selected");
+          b.setAttribute('aria-pressed', 'false');
+        });
+        btn.classList.add("selected");
+        btn.setAttribute('aria-pressed', 'true');
+      });
+    });
+    Array.prototype.forEach.call(document.getElementById("txChoices").children, function(btn){
+      btn.setAttribute('aria-pressed', 'false');
+      btn.addEventListener("click", function(){
+        var isSelected = btn.classList.toggle("selected");
+        btn.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
+      });
+    });
+  } // end render
+
+  function getScore(){
+    var sEl = document.getElementById("score");
+    var m = sEl.textContent.match(/(\d+)\/(\d+)/);
+    return m ? {right:parseInt(m[1],10), total:parseInt(m[2],10)} : {right:0,total:0};
+  }
+  function setScore(r,t){ document.getElementById("score").textContent = "Score: " + r + "/" + t; }
+
+  function check(c){
+    var chosenCondBtn = document.querySelector('#condChoices .btn.selected');
+    var chosenCond = chosenCondBtn ? chosenCondBtn.getAttribute('data-cond') : null;
+    var chosenTx = Array.prototype.map.call(
+      document.querySelectorAll('#txChoices .btn.selected'),
+      function(b){ return b.getAttribute('data-tx'); }
+    ).sort();
+    var requiredTx = c.therapies.slice().sort();
+
+    var condOK = (chosenCond === c.condition);
+    var txOK = JSON.stringify(chosenTx) === JSON.stringify(requiredTx);
+
+    var sc = getScore();
+    sc.total += 1; if(condOK && txOK) sc.right += 1; setScore(sc.right, sc.total);
+
+    var box = document.getElementById("result");
+    box.style.display = "block";
+    box.className = "result " + (condOK && txOK ? "" : "bad");
+    box.innerHTML =
+      "<div><b>Condition:</b> " + (condOK ? "✅ correct" : "❌ expected “" + c.condition + "”") + "</div>" +
+      "<div><b>Treatment:</b> " + (txOK ? "✅ correct" : "❌ expected " + c.therapies.map(function(k){return THERAPIES[k];}).join(", ")) + "</div>";
+  }
+
+  // boot
+  document.addEventListener("DOMContentLoaded", function(){ render(); });
+})();
+</script>
+</body>
+</html>
