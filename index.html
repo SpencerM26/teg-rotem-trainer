@@ -1,13 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>TEG/ROTEM Interpretation Practice</title>
 <style>
-  :root {
-    --bg:#0b0c10; --panel:#12141b; --ink:#e7ebf2; --muted:#98a2b3; --accent:#67e8f9;
-  }
+  :root { --bg:#0b0c10; --panel:#12141b; --ink:#e7ebf2; --muted:#98a2b3; --accent:#67e8f9; }
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Arial}
   .wrap{max-width:1100px;margin:0 auto;padding:20px}
@@ -24,7 +22,6 @@
   .btn.primary{background:#1b2437;border-color:#32415a}
   .btn.selected{background:var(--accent);color:#0a0f12;border-color:var(--accent)}
   .choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
-  /* IMPORTANT: transparent so black SVGs remain visible */
   img.trace{display:block;width:100%;height:auto;background:transparent;border-radius:12px;border:1px solid #2a3140}
   .params{margin-top:8px;border-top:1px dashed #2a3140;padding-top:8px}
   table{width:100%;border-collapse:collapse;font-size:14px}
@@ -36,11 +33,34 @@
   .done{padding:16px;border-radius:14px;background:#11221a;border:1px solid #1f3c2e}
   @media (max-width:920px){ .grid{grid-template-columns:1fr} .choices{grid-template-columns:1fr 1fr} }
 </style>
-<script defer>
-(function(){
-  const $ = s => document.querySelector(s);
+</head>
+<body>
+  <div class="wrap">
+    <div class="header">
+      <h1>TEG/ROTEM Interpretation Practice</h1>
+      <div id="score" class="score">Score: 0/0</div>
+    </div>
+    <div id="main" style="margin-top:16px"></div>
+  </div>
 
-  const CONDITIONS = [
+<script>
+(function(){
+  // helpers
+  function $(sel){ return document.querySelector(sel); }
+  function el(tag, attrs, html){
+    var n = document.createElement(tag);
+    if(attrs){ for(var k in attrs){ n.setAttribute(k, attrs[k]); } }
+    if(html != null){ n.innerHTML = html; }
+    return n;
+  }
+  function shuffled(a){
+    var x=a.slice();
+    for(var i=x.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=x[i]; x[i]=x[j]; x[j]=t; }
+    return x;
+  }
+
+  // enums
+  var CONDITIONS = [
     "Normal",
     "Anticoagulants / Factor deficiency",
     "Platelet blockers",
@@ -49,8 +69,7 @@
     "DIC (early)",
     "DIC (late)"
   ];
-
-  const THERAPIES = {
+  var THERAPIES = {
     plasma: "Plasma (coag factors)",
     fibrinogen: "Fibrinogen (Cryo/conc)",
     platelets: "Platelets",
@@ -58,14 +77,13 @@
     protamine: "Protamine (heparin)",
     none: "No product"
   };
-
-  // Normal reference ranges (simplified)
-  const NORMALS = {
+  var NORMALS = {
     TEG: { R:[5,10], K:[1,3], alpha:[53,72], MA:[50,70], LY30:[0,3] },
     ROTEM: { CT:[38,79], CFT:[34,159], alpha:[65,83], MCF:[50,72], LI30:[94,100] }
   };
 
-  const CASES = [
+  // 14 scenarios
+  var CASES = [
     // NORMAL
     { id:"normal-1", svg:"graphs/Normal.svg", condition:"Normal",
       description:"Post-op check: dry field, normothermic, ionized Ca normal.",
@@ -165,199 +183,204 @@
     }
   ];
 
-  // shuffle order for a non-repeating run
-  function shuffled(a){ const x=[...a]; for(let i=x.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [x[i],x[j]]=[x[j],x[i]]; } return x; }
-  let order = shuffled(CASES.map((_,i)=>i));
-  let ptr = 0;
-  const score = { right:0, total:0 };
+  // state
+  var order = shuffled(CASES.map(function(_,i){ return i; }));
+  var ptr = 0;
+  var scoreboard = { right:0, total:0 };
 
   function render(){
+    var main = document.getElementById("main");
     if(ptr >= order.length){
-      $('#main').innerHTML = `
-        <div class="done">
-          <h2>All 14 scenarios completed 🎉</h2>
-          <p>Final score: <b>${score.right}/${score.total}</b></p>
-          <div class="row" style="margin-top:8px">
-            <button class="btn" id="restartBtn">Restart (reshuffle)</button>
-          </div>
-        </div>`;
-      $('#restartBtn').onclick = ()=>{ order=shuffled(CASES.map((_,i)=>i)); ptr=0; score.right=0; score.total=0; $('#score').textContent=\`Score: \${score.right}/\${score.total}\`; render(); };
+      main.innerHTML =
+        '<div class="done">' +
+          '<h2>All 14 scenarios completed 🎉</h2>' +
+          '<p>Final score: <b>' + scoreboard.right + '/' + scoreboard.total + '</b></p>' +
+          '<div class="row" style="margin-top:8px">' +
+            '<button class="btn" id="restartBtn">Restart (reshuffle)</button>' +
+          '</div>' +
+        '</div>';
+      document.getElementById("restartBtn").onclick = function(){
+        order = shuffled(CASES.map(function(_,i){ return i; }));
+        ptr = 0; scoreboard.right = 0; scoreboard.total = 0;
+        document.getElementById("score").textContent = "Score: 0/0";
+        render();
+      };
       return;
     }
 
-    const c = CASES[order[ptr]];
+    var c = CASES[order[ptr]];
 
-    $('#main').innerHTML = `
-      <div class="grid">
-        <div class="card">
-          <div class="row" style="justify-content:space-between">
-            <div>
-              <div class="muted" style="text-transform:uppercase;font-size:12px">Case</div>
-              <div class="title">${c.condition}</div>
-              <div class="muted" style="margin-top:2px">${c.description}</div>
-            </div>
-            <div class="row"><span class="pill">Progress ${ptr+1}/14</span></div>
-          </div>
+    var condButtons = CONDITIONS.map(function(name){
+      return '<button class="btn" data-cond="'+name+'">'+name+'</button>';
+    }).join('');
 
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start;margin-top:12px">
-            <div>
-              <div class="muted" style="text-transform:uppercase;font-size:12px;margin-bottom:6px">Trace (SVG)</div>
-              <img id="trace" class="trace" alt="trace" src="${c.svg}">
-              <div id="imgErr" class="error" style="display:none"></div>
-            </div>
+    var txButtons = Object.keys(THERAPIES).map(function(k){
+      return '<button class="btn" data-tx="'+k+'">'+THERAPIES[k]+'</button>';
+    }).join('');
 
-            <div>
-              <div class="row"><button id="toggleParams" class="btn">Show parameters</button></div>
-              <div id="params" class="params" style="display:none">
-                <div class="muted" style="margin-bottom:6px">TEG (min/deg/mm, %)</div>
-                <table>
-                  <tr><th>R</th><th>K</th><th>α</th><th>MA</th><th>LY30</th></tr>
-                  <tr><td>${c.teg.R}</td><td>${c.teg.K}</td><td>${c.teg.alpha}</td><td>${c.teg.MA}</td><td>${c.teg.LY30}</td></tr>
-                </table>
-                <div class="muted" style="margin:8px 0 6px">ROTEM (s/deg/mm, %)</div>
-                <table>
-                  <tr><th>CT</th><th>CFT</th><th>α</th><th>MCF</th><th>LI30</th></tr>
-                  <tr><td>${c.rotem.CT}</td><td>${c.rotem.CFT}</td><td>${c.rotem.alpha}</td><td>${c.rotem.MCF}</td><td>${c.rotem.LI30}</td></tr>
-                </table>
-              </div>
-            </div>
-          </div>
+    main.innerHTML =
+      '<div class="grid">' +
+        '<div class="card">' +
+          '<div class="row" style="justify-content:space-between">' +
+            '<div>' +
+              '<div class="muted" style="text-transform:uppercase;font-size:12px">Case</div>' +
+              '<div class="title">' + c.condition + '</div>' +
+              '<div class="muted" style="margin-top:2px">' + c.description + '</div>' +
+            '</div>' +
+            '<div class="row"><span class="pill">Progress ' + (ptr+1) + '/14</span></div>' +
+          '</div>' +
 
-          <div style="margin-top:12px">
-            <div class="muted" style="text-transform:uppercase;font-size:12px;margin-bottom:6px">1) Which condition?</div>
-            <div class="choices" id="condChoices">
-              ${CONDITIONS.map(name=>`<button class="btn" data-cond="${name}">${name}</button>`).join('')}
-            </div>
+          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start;margin-top:12px">' +
+            '<div>' +
+              '<div class="muted" style="text-transform:uppercase;font-size:12px;margin-bottom:6px">Trace (SVG)</div>' +
+              '<img id="trace" class="trace" alt="trace" src="' + c.svg + '">' +
+              '<div id="imgErr" class="error" style="display:none"></div>' +
+            '</div>' +
 
-            <div class="muted" style="text-transform:uppercase;font-size:12px;margin:12px 0 6px">2) Select treatment(s)</div>
-            <div class="choices" id="txChoices">
-              ${Object.entries(THERAPIES).map(([k,v])=>`<button class="btn" data-tx="${k}">${v}</button>`).join('')}
-            </div>
+            '<div>' +
+              '<div class="row"><button id="toggleParams" class="btn">Show parameters</button></div>' +
+              '<div id="params" class="params" style="display:none">' +
+                '<div class="muted" style="margin-bottom:6px">TEG (min/deg/mm, %)</div>' +
+                '<table>' +
+                  '<tr><th>R</th><th>K</th><th>α</th><th>MA</th><th>LY30</th></tr>' +
+                  '<tr><td>'+c.teg.R+'</td><td>'+c.teg.K+'</td><td>'+c.teg.alpha+'</td><td>'+c.teg.MA+'</td><td>'+c.teg.LY30+'</td></tr>' +
+                '</table>' +
+                '<div class="muted" style="margin:8px 0 6px">ROTEM (s/deg/mm, %)</div>' +
+                '<table>' +
+                  '<tr><th>CT</th><th>CFT</th><th>α</th><th>MCF</th><th>LI30</th></tr>' +
+                  '<tr><td>'+c.rotem.CT+'</td><td>'+c.rotem.CFT+'</td><td>'+c.rotem.alpha+'</td><td>'+c.rotem.MCF+'</td><td>'+c.rotem.LI30+'</td></tr>' +
+                '</table>' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
 
-            <div class="row" style="margin-top:10px">
-              <button id="checkBtn" class="btn">Check</button>
-              <button id="nextBtn" class="btn primary">Next</button>
-            </div>
+          '<div style="margin-top:12px">' +
+            '<div class="muted" style="text-transform:uppercase;font-size:12px;margin-bottom:6px">1) Which condition?</div>' +
+            '<div class="choices" id="condChoices">' + condButtons + '</div>' +
 
-            <div id="result" class="result" style="display:none"></div>
-          </div>
-        </div>
+            '<div class="muted" style="text-transform:uppercase;font-size:12px;margin:12px 0 6px">2) Select treatment(s)</div>' +
+            '<div class="choices" id="txChoices">' + txButtons + '</div>' +
 
-        <!-- Right panel: toggleable notes + normal values -->
-        <div class="card">
-          <div class="row" style="justify-content:space-between">
-            <div style="font-weight:700">Reference & Notes</div>
-            <button id="toggleNotes" class="btn">Show</button>
-          </div>
-          <div id="notesBox" style="display:none;margin-top:8px">
-            <div style="font-weight:700;margin:6px 0 4px">Normal values (simplified)</div>
-            <table style="margin-bottom:8px">
-              <tr><th colspan="5" style="text-align:left">TEG</th></tr>
-              <tr><th>R (min)</th><th>K (min)</th><th>α (deg)</th><th>MA (mm)</th><th>LY30 (%)</th></tr>
-              <tr>
-                <td>${NORMALS.TEG.R[0]}–${NORMALS.TEG.R[1]}</td>
-                <td>${NORMALS.TEG.K[0]}–${NORMALS.TEG.K[1]}</td>
-                <td>${NORMALS.TEG.alpha[0]}–${NORMALS.TEG.alpha[1]}</td>
-                <td>${NORMALS.TEG.MA[0]}–${NORMALS.TEG.MA[1]}</td>
-                <td>${NORMALS.TEG.LY30[0]}–${NORMALS.TEG.LY30[1]}</td>
-              </tr>
-            </table>
-            <table>
-              <tr><th colspan="5" style="text-align:left">ROTEM</th></tr>
-              <tr><th>CT (s)</th><th>CFT (s)</th><th>α (deg)</th><th>MCF (mm)</th><th>LI30 (%)</th></tr>
-              <tr>
-                <td>${NORMALS.ROTEM.CT[0]}–${NORMALS.ROTEM.CT[1]}</td>
-                <td>${NORMALS.ROTEM.CFT[0]}–${NORMALS.ROTEM.CFT[1]}</td>
-                <td>${NORMALS.ROTEM.alpha[0]}–${NORMALS.ROTEM.alpha[1]}</td>
-                <td>${NORMALS.ROTEM.MCF[0]}–${NORMALS.ROTEM.MCF[1]}</td>
-                <td>${NORMALS.ROTEM.LI30[0]}–${NORMALS.ROTEM.LI30[1]}</td>
-              </tr>
-            </table>
-            <ul class="muted" style="margin:10px 0 0 18px;line-height:1.4">
-              <li><b>R/CT ↑</b> → Plasma (consider protamine if heparin).</li>
-              <li><b>K/CFT ↑ or α ↓</b> → Fibrinogen (cryo/conc).</li>
-              <li><b>MA/MCF ↓</b> → Platelets.</li>
-              <li><b>LY30 ↑ / LI30 ↓</b> → Antifibrinolytic (TXA) if appropriate.</li>
-            </ul>
-            <div class="muted" style="margin-top:10px;font-size:12px">Educational tool only; not for clinical decision-making.</div>
-          </div>
-        </div>
-      </div>
-    `;
+            '<div class="row" style="margin-top:10px">' +
+              '<button id="checkBtn" class="btn">Check</button>' +
+              '<button id="nextBtn" class="btn primary">Next</button>' +
+            '</div>' +
 
-    // image error message
-    const img = $('#trace');
-    img.onerror = ()=>{ const e=$('#imgErr'); e.style.display='block'; e.textContent=`Could not load ${c.svg}. Check filename and graphs/ folder.`; };
+            '<div id="result" class="result" style="display:none"></div>' +
+          '</div>' +
+        '</div>' +
 
-    // toggle params
-    $('#toggleParams').onclick = ()=>{
-      const pane = $('#params');
-      const open = pane.style.display !== 'none';
-      pane.style.display = open ? 'none' : 'block';
-      $('#toggleParams').textContent = open ? 'Show parameters' : 'Hide parameters';
+        '<div class="card">' +
+          '<div class="row" style="justify-content:space-between">' +
+            '<div style="font-weight:700">Reference & Notes</div>' +
+            '<button id="toggleNotes" class="btn">Show</button>' +
+          '</div>' +
+          '<div id="notesBox" style="display:none;margin-top:8px">' +
+            '<div style="font-weight:700;margin:6px 0 4px">Normal values (simplified)</div>' +
+            '<table style="margin-bottom:8px">' +
+              '<tr><th colspan="5" style="text-align:left">TEG</th></tr>' +
+              '<tr><th>R (min)</th><th>K (min)</th><th>α (deg)</th><th>MA (mm)</th><th>LY30 (%)</th></tr>' +
+              '<tr>' +
+                '<td>'+NORMALS.TEG.R[0]+'–'+NORMALS.TEG.R[1]+'</td>' +
+                '<td>'+NORMALS.TEG.K[0]+'–'+NORMALS.TEG.K[1]+'</td>' +
+                '<td>'+NORMALS.TEG.alpha[0]+'–'+NORMALS.TEG.alpha[1]+'</td>' +
+                '<td>'+NORMALS.TEG.MA[0]+'–'+NORMALS.TEG.MA[1]+'</td>' +
+                '<td>'+NORMALS.TEG.LY30[0]+'–'+NORMALS.TEG.LY30[1]+'</td>' +
+              '</tr>' +
+            '</table>' +
+            '<table>' +
+              '<tr><th colspan="5" style="text-align:left">ROTEM</th></tr>' +
+              '<tr><th>CT (s)</th><th>CFT (s)</th><th>α (deg)</th><th>MCF (mm)</th><th>LI30 (%)</th></tr>' +
+              '<tr>' +
+                '<td>'+NORMALS.ROTEM.CT[0]+'–'+NORMALS.ROTEM.CT[1]+'</td>' +
+                '<td>'+NORMALS.ROTEM.CFT[0]+'–'+NORMALS.ROTEM.CFT[1]+'</td>' +
+                '<td>'+NORMALS.ROTEM.alpha[0]+'–'+NORMALS.ROTEM.alpha[1]+'</td>' +
+                '<td>'+NORMALS.ROTEM.MCF[0]+'–'+NORMALS.ROTEM.MCF[1]+'</td>' +
+                '<td>'+NORMALS.ROTEM.LI30[0]+'–'+NORMALS.ROTEM.LI30[1]+'</td>' +
+              '</tr>' +
+            '</table>' +
+            '<ul class="muted" style="margin:10px 0 0 18px;line-height:1.4">' +
+              '<li><b>R/CT ↑</b> → Plasma (consider protamine if heparin).</li>' +
+              '<li><b>K/CFT ↑ or α ↓</b> → Fibrinogen (cryo/conc).</li>' +
+              '<li><b>MA/MCF ↓</b> → Platelets.</li>' +
+              '<li><b>LY30 ↑ / LI30 ↓</b> → Antifibrinolytic (TXA) if appropriate.</li>' +
+            '</ul>' +
+            '<div class="muted" style="margin-top:10px;font-size:12px">Educational tool only; not for clinical use.</div>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+
+    // image error
+    var img = document.getElementById("trace");
+    img.onerror = function(){
+      var e = document.getElementById("imgErr");
+      e.style.display = "block";
+      e.textContent = "Could not load " + c.svg + ". Check filename and graphs/ folder.";
     };
 
-    // toggle notes panel (right side)
-    $('#toggleNotes').onclick = ()=>{
-      const box = $('#notesBox');
-      const open = box.style.display !== 'none';
-      box.style.display = open ? 'none' : 'block';
-      $('#toggleNotes').textContent = open ? 'Show' : 'Hide';
+    // toggles
+    document.getElementById("toggleParams").onclick = function(){
+      var pane = document.getElementById("params");
+      var open = pane.style.display !== "none";
+      pane.style.display = open ? "none" : "block";
+      this.textContent = open ? "Show parameters" : "Hide parameters";
+    };
+    document.getElementById("toggleNotes").onclick = function(){
+      var box = document.getElementById("notesBox");
+      var open = box.style.display !== "none";
+      box.style.display = open ? "none" : "block";
+      this.textContent = open ? "Show" : "Hide";
     };
 
     // single-select condition
-    Array.from($('#condChoices').children).forEach(btn=>{
-      btn.addEventListener('click', ()=>{
-        Array.from($('#condChoices').children).forEach(b=>b.classList.remove('selected'));
-        btn.classList.add('selected');
+    Array.prototype.forEach.call(document.getElementById("condChoices").children, function(btn){
+      btn.addEventListener("click", function(){
+        Array.prototype.forEach.call(document.getElementById("condChoices").children, function(b){ b.classList.remove("selected"); });
+        btn.classList.add("selected");
       });
     });
 
     // multi-select therapies
-    Array.from($('#txChoices').children).forEach(btn=>{
-      btn.addEventListener('click', ()=>btn.classList.toggle('selected'));
+    Array.prototype.forEach.call(document.getElementById("txChoices").children, function(btn){
+      btn.addEventListener("click", function(){ btn.classList.toggle("selected"); });
     });
 
-    $('#checkBtn').onclick = ()=>check(c);
-    $('#nextBtn').onclick = ()=>{ ptr++; render(); };
+    document.getElementById("checkBtn").onclick = function(){ check(c); };
+    document.getElementById("nextBtn").onclick = function(){ ptr++; render(); };
   }
 
   function check(c){
-    const chosenCond = Array.from(document.querySelectorAll('#condChoices .btn.selected'))[0]?.dataset.cond;
-    const chosenTx = Array.from(document.querySelectorAll('#txChoices .btn.selected')).map(b=>b.dataset.tx).sort();
-    const requiredTx = [...c.therapies].sort();
+    var chosenCondBtn = document.querySelector('#condChoices .btn.selected');
+    var chosenCond = chosenCondBtn ? chosenCondBtn.getAttribute('data-cond') : null;
+    var chosenTx = Array.prototype.map.call(
+      document.querySelectorAll('#txChoices .btn.selected'),
+      function(b){ return b.getAttribute('data-tx'); }
+    ).sort();
 
-    const condOK = chosenCond === c.condition;
-    const txOK = JSON.stringify(chosenTx) === JSON.stringify(requiredTx);
+    var requiredTx = c.therapies.slice().sort();
+    var condOK = (chosenCond === c.condition);
+    var txOK = JSON.stringify(chosenTx) === JSON.stringify(requiredTx);
 
     // score
-    window._score = window._score || {right:0,total:0};
-    const scoreBox = document.getElementById('score');
-    const r = window._score;
-    r.total++; if(condOK && txOK) r.right++;
-    scoreBox.textContent = `Score: ${r.right}/${r.total}`;
+    var sEl = document.getElementById("score");
+    var t = sEl.textContent.match(/(\d+)\/(\d+)/);
+    var r = t ? {right:parseInt(t[1],10), total:parseInt(t[2],10)} : {right:0,total:0};
+    r.total += 1; if(condOK && txOK) r.right += 1;
+    sEl.textContent = "Score: " + r.right + "/" + r.total;
 
-    const box = document.getElementById('result');
-    box.style.display='block';
-    box.className = `result ${condOK && txOK ? '' : 'bad'}`;
-    box.innerHTML = `
-      <div><b>Condition:</b> ${condOK ? '✅ correct' : `❌ expected “${c.condition}”`}</div>
-      <div><b>Treatment:</b> ${txOK ? '✅ correct' : `❌ expected ${c.therapies.map(k=>THERAPIES[k]).join(', ')}`}</div>
-    `;
+    var box = document.getElementById("result");
+    box.style.display = "block";
+    box.className = "result " + (condOK && txOK ? "" : "bad");
+    box.innerHTML =
+      "<div><b>Condition:</b> " + (condOK ? "✅ correct" : "❌ expected “" + c.condition + "”") + "</div>" +
+      "<div><b>Treatment:</b> " + (txOK ? "✅ correct" : "❌ expected " + c.therapies.map(function(k){return THERAPIES[k];}).join(", ")) + "</div>";
   }
 
   // boot
-  window.addEventListener('DOMContentLoaded', ()=>{ document.getElementById('score').textContent = 'Score: 0/0'; render(); });
+  document.addEventListener("DOMContentLoaded", function(){
+    render();
+  });
 })();
 </script>
-</head>
-<body>
-  <div class="wrap">
-    <div class="header">
-      <h1>TEG/ROTEM Interpretation Practice</h1>
-      <div id="score" class="score">Score: 0/0</div>
-    </div>
-    <div id="main" style="margin-top:16px"></div>
-  </div>
 </body>
 </html>
