@@ -2,23 +2,143 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>TEG/ROTEM Interpretation Practice</title>
   <style>
-    body { font-family: system-ui, sans-serif; background: #f9fafb; margin: 0; padding: 1rem; }
-    .container { max-width: 900px; margin: 0 auto; background: white; border-radius: 1rem; padding: 2rem; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
-    .header { display: flex; justify-content: space-between; align-items: center; }
-    .cases { margin-top: 1.5rem; }
-    img { width: 100%; border-radius: 0.75rem; background: #fff; border: 1px solid #ddd; }
-    .params, .choices, .result { margin-top: 1rem; }
-    button { background: #2563eb; color: white; border: none; padding: 0.5rem 1rem; border-radius: 0.5rem; cursor: pointer; }
-    button:hover { background: #1d4ed8; }
-    .btn-outline { background: white; color: #2563eb; border: 1px solid #2563eb; }
-    .btn-outline.selected { background: #2563eb; color: white; }
-    .result { background: #f1f5f9; padding: 1rem; border-radius: 0.75rem; margin-top: 1rem; }
-    h1 { font-size: 1.5rem; margin: 0; }
-    h2 { margin: 0.5rem 0; font-size: 1.25rem; }
+    :root { --bg:#f9fafb; --card:#ffffff; --ink:#0b1220; --muted:#6b7280; --accent:#2563eb; }
+    *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Arial}
+    .container{max-width:980px;margin:16px auto;padding:20px;background:var(--card);border-radius:14px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+    .header{display:flex;justify-content:space-between;align-items:center}
+    .header h1{font-size:20px;margin:0}
+    #score{font-weight:600}
+    .case{margin-top:18px}
+    h2{margin:.25rem 0 .5rem;font-size:18px}
+    p{margin:.25rem 0;color:var(--muted)}
+    img.trace{display:block;width:100%;height:auto;background:#000;border-radius:12px;border:1px solid #ddd}
+    .grid{display:grid;grid-template-columns:1fr;gap:14px}
+    .choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:10px}
+    button{appearance:none;cursor:pointer;border-radius:10px;padding:10px 12px;border:1px solid #cdd3dd;background:#fff;color:#111}
+    button:hover{border-color:#9aa4b6}
+    .btn{background:var(--accent);color:#fff;border-color:var(--accent)}
+    .btn-outline.selected{background:var(--accent);color:#fff;border-color:var(--accent)}
+    .result{margin-top:12px;padding:12px;border-radius:10px;background:#eef2ff;border:1px solid #c7d2fe}
+    .error{margin-top:12px;padding:12px;border-radius:10px;background:#fff1f2;border:1px solid #fecaca;color:#991b1b}
+    .hint{font-size:12px;color:var(--muted);margin-top:8px}
+    @media (max-width:860px){ .choices{grid-template-columns:1fr 1fr} }
   </style>
+  <script defer>
+    (function(){
+      const $ = sel => document.querySelector(sel);
+
+      const THERAPIES = {
+        plasma: "Plasma (factors)",
+        fibrinogen: "Fibrinogen (Cryo)",
+        platelets: "Platelets",
+        txa: "TXA / antifibrinolytic",
+        protamine: "Protamine",
+        doNothing: "No product"
+      };
+
+      // Use ONLY relative paths (no leading /)
+      const CASES = [
+        // NORMAL
+        { id:"normal-1", title:"Normal (post-op check)", scenario:"Stable patient, minimal bleeding.", svg:"graphs/Normal.svg", answers:["doNothing"], explanation:"Normal viscoelastic profile; no therapy needed." },
+        { id:"normal-2", title:"Normal (trauma bay re-eval)", scenario:"Bleeding controlled; normothermic.", svg:"graphs/Normal.svg", answers:["doNothing"], explanation:"Trace consistent with normal coagulation." },
+
+        // ANTICOAG / FACTOR DEFICIENCY
+        { id:"anticoag-1", title:"Delayed initiation (factors)", scenario:"Post-CPB oozing; elevated ACT.", svg:"graphs/anticoagulant_factor_deficiency.svg", answers:["plasma"], explanation:"Prolonged initiation (R↑) → give plasma." },
+        { id:"anticoag-2", title:"Heparin effect", scenario:"After heparinization; anti-Xa elevated.", svg:"graphs/anticoagulant_factor_deficiency.svg", answers:["protamine"], explanation:"Prolonged initiation with heparin effect → protamine." },
+
+        // PLATELET BLOCKERS / THROMBOCYTOPENIA
+        { id:"platelet-1", title:"Antiplatelet therapy", scenario:"On clopidogrel; oozing field.", svg:"graphs/Platelet_blockers.svg", answers:["platelets"], explanation:"Low MA → platelet transfusion." },
+        { id:"platelet-2", title:"Thrombocytopenia", scenario:"Platelets 45k; initiation normal.", svg:"graphs/Platelet_blockers.svg", answers:["platelets"], explanation:"Clot strength low → give platelets." },
+
+        // FIBRINOLYSIS
+        { id:"lysis-1", title:"Hyperfibrinolysis (trauma)", scenario:"Trauma with diffuse bleeding.", svg:"graphs/fibrinolysis.svg", answers:["txa"], explanation:"Lysis after MA → TXA." },
+        { id:"lysis-2", title:"Fibrinolysis (post-ortho)", scenario:"Recurrent oozing after ortho.", svg:"graphs/fibrinolysis.svg", answers:["txa"], explanation:"Increased lysis → antifibrinolytic indicated." },
+
+        // HYPERCOAGULABLE
+        { id:"hyper-1", title:"Hypercoagulable state", scenario:"Very rapid clot formation.", svg:"graphs/hypercoaguable.svg", answers:["doNothing"], explanation:"Accelerated formation; avoid products." },
+        { id:"hyper-2", title:"Thrombophilia", scenario:"High MA; minimal bleeding.", svg:"graphs/hypercoaguable.svg", answers:["doNothing"], explanation:"Strong trace; no correction needed." },
+
+        // DIC EARLY
+        { id:"dic-early-1", title:"DIC (early)", scenario:"Sepsis; hypercoag with lysis.", svg:"graphs/DIC_early.svg", answers:["txa"], explanation:"Early DIC often hypercoagulable with lysis → TXA." },
+        { id:"dic-early-2", title:"DIC evolving", scenario:"Rising D-dimer, rapid breakdown.", svg:"graphs/DIC_early.svg", answers:["txa"], explanation:"Shows increased fibrinolysis → antifibrinolytic." },
+
+        // DIC LATE
+        { id:"dic-late-1", title:"DIC (late)", scenario:"Severe sepsis; consumption coagulopathy.", svg:"graphs/DIC_late.svg", answers:["plasma","fibrinogen","platelets"], explanation:"Global deficiency pattern → multi-product support." },
+        { id:"dic-late-2", title:"End-stage DIC", scenario:"Thin, weak trace.", svg:"graphs/DIC_late.svg", answers:["plasma","fibrinogen","platelets"], explanation:"Loss of clot formation → replace all components." }
+      ];
+
+      const score = { right:0, total:0 };
+      let idx = 0;
+
+      function renderCase(){
+        const host = document.getElementById('caseArea');
+        const c = CASES[idx];
+        host.innerHTML = `
+          <div class="case">
+            <h2>${c.title}</h2>
+            <p><b>Scenario:</b> ${c.scenario}</p>
+            <div class="grid">
+              <img id="traceImg" class="trace" src="${c.svg}" alt="viscoelastic trace">
+            </div>
+            <div class="choices" id="choices">
+              ${Object.entries(THERAPIES).map(([k,v])=>`<button class="btn-outline" data-key="${k}">${v}</button>`).join('')}
+            </div>
+            <div style="margin-top:10px">
+              <button class="btn" id="checkBtn">Check</button>
+              <button id="nextBtn">Next</button>
+              <button id="randBtn">Random</button>
+            </div>
+            <div id="result" class="result" style="display:none;"></div>
+            <div id="errBox" class="error" style="display:none;"></div>
+            <div class="hint">If the image fails to load, verify the path exists: <code>${c.svg}</code></div>
+          </div>
+        `;
+
+        // image load error hint
+        const img = document.getElementById('traceImg');
+        img.onerror = () => {
+          const err = document.getElementById('errBox');
+          err.style.display = 'block';
+          err.textContent = `Could not load ${c.svg}. Check filename/capitalization and that it is inside the graphs/ folder.`;
+        };
+
+        // selection toggles
+        document.querySelectorAll('#choices .btn-outline').forEach(b=>{
+          b.addEventListener('click',()=>b.classList.toggle('selected'));
+        });
+
+        document.getElementById('checkBtn').onclick = check;
+        document.getElementById('nextBtn').onclick = () => { idx=(idx+1)%CASES.length; renderCase(); };
+        document.getElementById('randBtn').onclick = () => { idx=Math.floor(Math.random()*CASES.length); renderCase(); };
+      }
+
+      function check(){
+        const c = CASES[idx];
+        const selected = Array.from(document.querySelectorAll('#choices .btn-outline.selected')).map(b=>b.dataset.key).sort().join(',');
+        const correct = c.answers.slice().sort().join(',');
+        score.total++; if(selected===correct) score.right++;
+        document.getElementById('score').textContent = `Score: ${score.right} / ${score.total}`;
+        const box = document.getElementById('result');
+        box.style.display='block';
+        box.innerHTML = `<p><b>Correct:</b> ${c.answers.map(a=>THERAPIES[a]).join(', ')}</p><p>${c.explanation}</p>`;
+      }
+
+      // Safe boot with error reporting
+      window.addEventListener('DOMContentLoaded', ()=>{
+        try {
+          if(!document.getElementById('caseArea')) throw new Error('Missing #caseArea container');
+          renderCase();
+        } catch (e) {
+          const host = document.getElementById('caseArea');
+          host.innerHTML = `<div class="error"><b>Script error:</b> ${e.message}</div>`;
+          console.error(e);
+        }
+      });
+    })();
+  </script>
 </head>
 <body>
   <div class="container">
@@ -26,89 +146,7 @@
       <h1>TEG/ROTEM Interpretation Practice</h1>
       <div id="score">Score: 0 / 0</div>
     </div>
-    <div id="caseArea" class="cases"></div>
+    <div id="caseArea"><div class="hint">Loading…</div></div>
   </div>
-
-  <script>
-    const THERAPIES = {
-      plasma: "Plasma (factors)",
-      fibrinogen: "Fibrinogen (Cryo)",
-      platelets: "Platelets",
-      txa: "TXA / antifibrinolytic",
-      protamine: "Protamine",
-      doNothing: "No product"
-    };
-
-    const CASES = [
-      // NORMAL
-      { id:"normal-1", title:"Normal (post-op check)", scenario:"Stable patient, minimal bleeding.", svg:"graphs/Normal.svg", answers:["doNothing"], explanation:"Normal viscoelastic profile; no therapy needed." },
-      { id:"normal-2", title:"Normal (trauma bay re-eval)", scenario:"Bleeding controlled; normothermic.", svg:"graphs/Normal.svg", answers:["doNothing"], explanation:"Trace consistent with normal coagulation." },
-
-      // ANTICOAG / FACTOR DEFICIENCY
-      { id:"anticoag-1", title:"Delayed initiation (factors)", scenario:"Post-CPB oozing; elevated ACT.", svg:"graphs/anticoagulant_factor_deficiency.svg", answers:["plasma"], explanation:"Prolonged initiation (R↑) → give plasma." },
-      { id:"anticoag-2", title:"Heparin effect", scenario:"After heparinization; anti-Xa elevated.", svg:"graphs/anticoagulant_factor_deficiency.svg", answers:["protamine"], explanation:"Prolonged initiation with heparin effect → protamine." },
-
-      // PLATELET BLOCKERS / THROMBOCYTOPENIA
-      { id:"platelet-1", title:"Antiplatelet therapy", scenario:"On clopidogrel; oozing surgical field.", svg:"graphs/Platelet_blockers.svg", answers:["platelets"], explanation:"Low MA → platelet transfusion." },
-      { id:"platelet-2", title:"Thrombocytopenia", scenario:"Platelets 45k, normal initiation.", svg:"graphs/Platelet_blockers.svg", answers:["platelets"], explanation:"Low clot strength → give platelets." },
-
-      // FIBRINOLYSIS
-      { id:"lysis-1", title:"Hyperfibrinolysis (trauma)", scenario:"Trauma with diffuse bleeding.", svg:"graphs/fibrinolysis.svg", answers:["txa"], explanation:"Lysis after max amplitude → TXA." },
-      { id:"lysis-2", title:"Fibrinolysis (post-ortho)", scenario:"Recurrent oozing after major ortho surgery.", svg:"graphs/fibrinolysis.svg", answers:["txa"], explanation:"Increased lysis → antifibrinolytic indicated." },
-
-      // HYPERCOAGULABLE
-      { id:"hyper-1", title:"Hypercoagulable state", scenario:"Very rapid clot formation.", svg:"graphs/hypercoaguable.svg", answers:["doNothing"], explanation:"Accelerated formation; avoid products." },
-      { id:"hyper-2", title:"Thrombophilia", scenario:"High MA; minimal bleeding.", svg:"graphs/hypercoaguable.svg", answers:["doNothing"], explanation:"Strong trace; no correction needed." },
-
-      // DIC EARLY
-      { id:"dic-early-1", title:"DIC (early)", scenario:"Sepsis; hypercoag with lysis.", svg:"graphs/DIC_early.svg", answers:["txa"], explanation:"Early DIC often hypercoagulable with lysis → TXA." },
-      { id:"dic-early-2", title:"DIC evolving", scenario:"Rising D-dimer, rapid breakdown.", svg:"graphs/DIC_early.svg", answers:["txa"], explanation:"Shows increased fibrinolysis → antifibrinolytic." },
-
-      // DIC LATE
-      { id:"dic-late-1", title:"DIC (late)", scenario:"Severe sepsis; consumption coagulopathy.", svg:"graphs/DIC_late.svg", answers:["plasma","fibrinogen","platelets"], explanation:"Global deficiency pattern → multi-product support." },
-      { id:"dic-late-2", title:"End-stage DIC", scenario:"Thin, weak trace.", svg:"graphs/DIC_late.svg", answers:["plasma","fibrinogen","platelets"], explanation:"Loss of clot formation → replace all components." }
-    ];
-
-    let score = { right: 0, total: 0 };
-    let currentIndex = 0;
-
-    function renderCase() {
-      const c = CASES[currentIndex];
-      const container = document.getElementById('caseArea');
-      container.innerHTML = `
-        <h2>${c.title}</h2>
-        <p><b>Scenario:</b> ${c.scenario}</p>
-        <img src="${c.svg}" alt="TEG trace">
-        <div class="choices">
-          ${Object.entries(THERAPIES).map(([key, label]) =>
-            `<button class="btn-outline" data-key="${key}">${label}</button>`
-          ).join('')}
-        </div>
-        <div style="margin-top:1rem;">
-          <button id="checkBtn">Check</button>
-          <button id="nextBtn" class="btn-outline">Next</button>
-        </div>
-        <div id="result" class="result" style="display:none;"></div>
-      `;
-
-      document.querySelectorAll('.btn-outline').forEach(btn => {
-        btn.addEventListener('click', e => {
-          btn.classList.toggle('selected');
-        });
-      });
-
-      document.getElementById('checkBtn').addEventListener('click', checkAnswer);
-      document.getElementById('nextBtn').addEventListener('click', nextCase);
-    }
-
-    function checkAnswer() {
-      const c = CASES[currentIndex];
-      const selected = [...document.querySelectorAll('.btn-outline.selected')].map(b => b.dataset.key);
-      const correct = c.answers.sort().join(',') === selected.sort().join(',');
-      score.total++;
-      if (correct) score.right++;
-      document.getElementById('score').textContent = `Score: ${score.right} / ${score.total}`;
-      const result = document.getElementById('result');
-      result.style.display = 'block';
-      result.innerHTML = `
-        <p><b>Correct:</b> ${c.answers.map(a => THERAPIES[a]).join(', '
+</body>
+</html>
