@@ -75,7 +75,7 @@
     ROTEM:{ CT:[38,79], CFT:[34,159], alpha:[65,83], MCF:[50,72], LI30:[94,100] }
   };
 
-  // scenarios
+  // scenarios (your exact texts + new cases)
   var CASES = [
     // 1 Normal
     { id:"normal-1", svg:"graphs/Normal.svg", condition:"Normal",
@@ -91,7 +91,7 @@
       rotem:{CT:75, CFT:140, alpha:68, MCF:60, LI30:97},
       therapies:["none"]
     },
-    // 3 Factor deficiency → Plasma (unchanged; your “Good”)
+    // 3 Factor deficiency → Plasma (your “Good” = keep original)
     { id:"anticoag-1", svg:"graphs/anticoagulant_factor_deficiency.svg", condition:"Anticoagulants / Factor deficiency",
       description:"After cardiothoracic surgery, mild oozing persists from multiple small sites. The patient has been rewarmed and electrolytes corrected. Anesthetic recovery is uneventful, but clinicians obtain a viscoelastic trace to assess early clot initiation and kinetics before giving additional products.",
       teg:{R:16, K:2.5, alpha:58, MA:62, LY30:1},
@@ -105,7 +105,7 @@
       rotem:{CT:160, CFT:145, alpha:58, MCF:60, LI30:98},
       therapies:["plasma"]
     },
-    // 5 Fibrinogen deficit → keep previous text (NOT “Good” literal)
+    // 5 Fibrinogen deficit (restored full text)
     { id:"fibrino-1", svg:"graphs/anticoagulant_factor_deficiency.svg", condition:"Anticoagulants / Factor deficiency",
       description:"In a major abdominal procedure with moderate transfusion requirement, the operative field shows slow ooze from broad tissue planes. Core temperature and acid–base status are acceptable. A viscoelastic study is performed to examine clot propagation and firmness.",
       teg:{R:8, K:3.5, alpha:48, MA:56, LY30:2},
@@ -119,28 +119,28 @@
       rotem:{CT:78, CFT:240, alpha:56, MCF:52, LI30:98},
       therapies:["fibrinogen"]
     },
-    // 7 Platelet dysfunction (antiplatelet)
+    // 7 Platelets (antiplatelet)
     { id:"plate-1", svg:"graphs/Platelet_blockers.svg", condition:"Abnormal platelet function / antiplatelet agent",
       description:"An urgent non-cardiac operation proceeds in a patient with MI and stent placement 5 months ago. There is generalized oozing. After correction of temperature and electrolytes, a viscoelastic study is obtained to evaluate overall clot strength.",
       teg:{R:8, K:2, alpha:55, MA:40, LY30:1},
       rotem:{CT:75, CFT:160, alpha:60, MCF:38, LI30:98},
       therapies:["platelets"]
     },
-    // 8 Platelet deficiency/dysfunction
+    // 8 Platelets
     { id:"plate-2", svg:"graphs/Platelet_blockers.svg", condition:"Abnormal platelet function / antiplatelet agent",
       description:"A complex hepatic resection becomes notable for diffuse surface bleeding that is unresponsive to surgical measures. The anesthesia team performs a viscoelastic assay.",
       teg:{R:7, K:1.8, alpha:60, MA:36, LY30:2},
       rotem:{CT:70, CFT:150, alpha:62, MCF:34, LI30:97},
       therapies:["platelets"]
     },
-    // 9 Fibrinolysis → TXA
+    // 9 TXA
     { id:"lysis-1", svg:"graphs/fibrinolysis.svg", condition:"Fibrinolysis",
       description:"Following initial control of major trauma bleeding, re-accumulation of blood occurs at line sites and drains. Laboratory studies are pending. A viscoelastic test is requested.",
       teg:{R:8, K:2, alpha:60, MA:62, LY30:14},
       rotem:{CT:70, CFT:140, alpha:65, MCF:62, LI30:60},
       therapies:["txa"]
     },
-    // 10 Fibrinolysis → TXA
+    // 10 TXA
     { id:"lysis-2", svg:"graphs/fibrinolysis.svg", condition:"Fibrinolysis",
       description:"In elective orthopedic surgery, steady drain output persists despite good hemostasis and stable vitals. The surgeon suspects fragile clot formation. A viscoelastic profile is performed.",
       teg:{R:8, K:2, alpha:60, MA:58, LY30:10},
@@ -161,7 +161,7 @@
       rotem:{CT:50, CFT:80, alpha:78, MCF:68, LI30:99},
       therapies:["none"]
     },
-    // 13 DIC (late) → multi-product
+    // 13 DIC (late) multi-product
     { id:"dicL-1", svg:"graphs/DIC_late.svg", condition:"DIC (late)",
       description:"In a patient with septic shock, ongoing mucosal and line-site bleeding develops despite supportive care. Vital signs stabilize with resuscitation, but the team notes ongoing bleeding. A viscoelastic test is performed.",
       teg:{R:18, K:5, alpha:35, MA:34, LY30:8},
@@ -190,167 +190,179 @@
 
   function render(){
     var main = document.getElementById("main");
-    if(ptr >= order.length){
-      main.innerHTML =
-        '<div class="done">' +
-          '<h2>All ' + CASES.length + ' scenarios completed 🎉</h2>' +
-          '<p>Final score: <b>' + getScore().right + '/' + getScore().total + '</b></p>' +
-          '<div class="row" style="margin-top:8px">' +
-            '<button class="btn" id="restartBtn">Restart (reshuffle)</button>' +
-          '</div>' +
-        '</div>';
-      document.getElementById("restartBtn").onclick = function(){
-        order = shuffled(CASES.map(function(_,i){ return i; }));
-        ptr = 0; setScore(0,0); document.getElementById("score").textContent = "Score: 0/0"; render();
-      };
-      return;
-    }
+    try {
+      if(ptr >= order.length){
+        main.innerHTML = `
+          <div class="done">
+            <h2>All ${CASES.length} scenarios completed 🎉</h2>
+            <p>Final score: <b>${getScore().right}/${getScore().total}</b></p>
+            <div class="row" style="margin-top:8px">
+              <button class="btn" id="restartBtn">Restart (reshuffle)</button>
+            </div>
+          </div>`;
+        document.getElementById("restartBtn").onclick = function(){
+          order = shuffled(CASES.map(function(_,i){ return i; }));
+          ptr = 0; setScore(0,0); document.getElementById("score").textContent = "Score: 0/0"; render();
+        };
+        return;
+      }
 
-    var c = CASES[order[ptr]];
-    var condButtons = CONDITIONS.map(function(n){ return '<button class="btn" data-cond="'+n+'">'+n+'</button>'; }).join('');
-    var txButtons = Object.keys(THERAPIES).map(function(k){ return '<button class="btn" data-tx="'+k+'">'+THERAPIES[k]+'</button>'; }).join('');
+      var c = CASES[order[ptr]];
+      var condButtons = CONDITIONS.map(function(n){ return `<button class="btn" data-cond="${n}">${n}</button>`; }).join('');
+      var txButtons = Object.keys(THERAPIES).map(function(k){ return `<button class="btn" data-tx="${k}">${THERAPIES[k]}</button>`; }).join('');
 
-    main.innerHTML =
-      '<div class="grid">' +
-        '<div class="card">' +
-          '<div class="row" style="justify-content:space-between">' +
-            '<div>' +
-              '<div class="muted" style="text-transform:uppercase;font-size:12px">Case</div>' +
-              '<div class="title">Interpret this viscoelastic profile</div>' +
-              '<div class="muted" style="margin-top:2px">'+ c.description +'</div>' +
-            '</div>' +
-            '<div class="row"><span class="pill">Progress ' + (ptr+1) + '/' + CASES.length + '</span></div>' +
-          '</div>' +
+      main.innerHTML = `
+        <div class="grid">
+          <div class="card">
+            <div class="row" style="justify-content:space-between">
+              <div>
+                <div class="muted" style="text-transform:uppercase;font-size:12px">Case</div>
+                <div class="title">Interpret this viscoelastic profile</div>
+                <div class="muted" style="margin-top:2px">${c.description}</div>
+              </div>
+              <div class="row"><span class="pill">Progress ${ptr+1}/${CASES.length}</span></div>
+            </div>
 
-          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start;margin-top:12px">' +
-            '<div>' +
-              '<div class="muted" style="text-transform:uppercase;font-size:12px;margin-bottom:6px">Trace (SVG)</div>' +
-              '<div class="trace-wrap"><img id="trace" class="trace" alt="' + c.id + ' viscoelastic trace" src="' + c.svg + '"></div>' +
-              '<div id="imgErr" class="error" style="display:none"></div>' +
-            '</div>' +
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start;margin-top:12px">
+              <div>
+                <div class="muted" style="text-transform:uppercase;font-size:12px;margin-bottom:6px">Trace (SVG)</div>
+                <div class="trace-wrap"><img id="trace" class="trace" alt="${c.id} viscoelastic trace" src="${c.svg}"></div>
+                <div id="imgErr" class="error" style="display:none"></div>
+              </div>
 
-            '<div>' +
-              '<div class="row"><button id="toggleParams" class="btn">Show parameters</button></div>' +
-              '<div id="params" class="params" style="display:none">' +
-                '<div class="muted" style="margin-bottom:6px">TEG (min/deg/mm, %)</div>' +
-                '<table>' +
-                  '<tr><th>R</th><th>K</th><th>α</th><th>MA</th><th>LY30</th></tr>' +
-                  '<tr><td>'+c.teg.R+'</td><td>'+c.teg.K+'</td><td>'+c.teg.alpha+'</td><td>'+c.teg.MA+'</td><td>'+c.teg.LY30+'</td></tr>' +
-                '</table>' +
-                '<div class="muted" style="margin:8px 0 6px">ROTEM (s/deg/mm, %)</div>' +
-                '<table>' +
-                  '<tr><th>CT</th><th>CFT</th><th>α</th><th>MCF</th><th>LI30</th></tr>' +
-                  '<tr><td>'+c.rotem.CT+'</td><td>'+c.rotem.CFT+'</td><td>'+c.rotem.alpha+'</td><td>'+c.rotem.MCF+'</td><td>'+c.rotem.LI30+'</td></tr>' +
-                '</table>' +
-              '</div>' +
-            '</div>' +
-          '</div>' +
+              <div>
+                <div class="row"><button id="toggleParams" class="btn">Show parameters</button></div>
+                <div id="params" class="params" style="display:none">
+                  <div class="muted" style="margin-bottom:6px">TEG (min/deg/mm, %)</div>
+                  <table>
+                    <tr><th>R</th><th>K</th><th>α</th><th>MA</th><th>LY30</th></tr>
+                    <tr><td>${c.teg.R}</td><td>${c.teg.K}</td><td>${c.teg.alpha}</td><td>${c.teg.MA}</td><td>${c.teg.LY30}</td></tr>
+                  </table>
+                  <div class="muted" style="margin:8px 0 6px">ROTEM (s/deg/mm, %)</div>
+                  <table>
+                    <tr><th>CT</th><th>CFT</th><th>α</th><th>MCF</th><th>LI30</th></tr>
+                    <tr><td>${c.rotem.CT}</td><td>${c.rotem.CFT}</td><td>${c.rotem.alpha}</td><td>${c.rotem.MCF}</td><td>${c.rotem.LI30}</td></tr>
+                  </table>
+                </div>
+              </div>
+            </div>
 
-          '<div style="margin-top:12px">' +
-            '<div class="muted" style="text-transform:uppercase;font-size:12px;margin-bottom:6px">1) Which condition?</div>' +
-            '<div class="choices" id="condChoices">' + condButtons + '</div>' +
+            <div style="margin-top:12px">
+              <div class="muted" style="text-transform:uppercase;font-size:12px;margin-bottom:6px">1) Which condition?</div>
+              <div class="choices" id="condChoices">${condButtons}</div>
 
-            '<div class="muted" style="text-transform:uppercase;font-size:12px;margin:12px 0 6px">2) Select treatment(s)</div>' +
-            '<div class="choices" id="txChoices">' + txButtons + '</div>' +
+              <div class="muted" style="text-transform:uppercase;font-size:12px;margin:12px 0 6px">2) Select treatment(s)</div>
+              <div class="choices" id="txChoices">${txButtons}</div>
 
-            '<div class="row" style="margin-top:10px">' +
-              '<button id="backBtn" class="btn">Back</button>' +
-              '<button id="checkBtn" class="btn">Check</button>' +
-              '<button id="nextBtn" class="btn primary">Next</button>' +
-            '</div>' +
+              <div class="row" style="margin-top:10px">
+                <button id="backBtn" class="btn">Back</button>
+                <button id="checkBtn" class="btn">Check</button>
+                <button id="nextBtn" class="btn primary">Next</button>
+              </div>
 
-            '<div id="result" class="result" style="display:none"></div>' +
-          '</div>' +
-        '</div>' +
-
-        '<div class="card">' +
-          '<div class="row" style="justify-content:space-between">' +
-            '<div style="font-weight:700">Reference & Notes</div>' +
-            '<button id="toggleNotes" class="btn">Hide</button>' +
-          '</div>' +
-          '<div id="notesBox" style="display:block;margin-top:8px">' +
-            '<div style="font-weight:700;margin:6px 0 4px">Normal values (simplified)</div>' +
-            '<table style="margin-bottom:8px">' +
-              '<tr><th colspan="5" style="text-align:left">TEG</th></tr>' +
-              '<tr><th>R (min)</th><th>K (min)</th><th>α (deg)</th><th>MA (mm)</th><th>LY30 (%)</th></tr>' +
-              '<tr>' +
-                '<td>'+NORMALS.TEG.R[0]+'–'+NORMALS.TEG.R[1]+'</td>' +
-                '<td>'+NORMALS.TEG.K[0]+'–'+NORMALS.TEG.K[1]+'</td>' +
-                '<td>'+NORMALS.TEG.alpha[0]+'–'+NORMALS.TEG.alpha[1]+'</td>' +
-                '<td>'+NORMALS.TEG.MA[0]+'–'+NORMALS.TEG.MA[1]+'</td>' +
-                '<td>'+NORMALS.TEG.LY30[0]+'–'+NORMALS.TEG.LY30[1]+'</td>' +
-              '</tr>' +
-            '</table>' +
-            '<table>' +
-              '<tr><th colspan="5" style="text-align:left">ROTEM</th></tr>' +
-              '<tr><th>CT (s)</th><th>CFT (s)</th><th>α (deg)</th><th>MCF (mm)</th><th>LI30 (%)</th></tr>' +
-              '<tr>' +
-                '<td>'+NORMALS.ROTEM.CT[0]+'–'+NORMALS.ROTEM.CT[1]+'</td>' +
-                '<td>'+NORMALS.ROTEM.CFT[0]+'–'+NORMALS.ROTEM.CFT[1]+'</td>' +
-                '<td>'+NORMALS.ROTEM.alpha[0]+'–'+NORMALS.ROTEM.alpha[1]+'</td>' +
-                '<td>'+NORMALS.ROTEM.MCF[0]+'–'+NORMALS.ROTEM.MCF[1]+'</td>' +
-                '<td>'+NORMALS.ROTEM.LI30[0]+'–'+NORMALS.ROTEM.LI30[1]+'</td>' +
-              '</tr>' +
-            '</table>' +
-            <ul class="muted" style="margin:10px 0 0 18px;line-height:1.4">
-              <li><b>R/CT ↑</b> → Plasma (coagulation factors).</li>
-              <li><b>K/CFT ↑ or α ↓</b> → Fibrinogen (cryo or concentrate).</li>
-              <li><b>MA/MCF ↓</b> → Platelets.</li>
-              <li><b>LY30 ↑ / LI30 ↓</b> → Consider antifibrinolytic (TXA) when appropriate.</li>
-            </ul>
-            <div class="muted" style="margin-top:10px;font-size:12px">Educational tool only; not for clinical decision-making.</div>
+              <div id="result" class="result" style="display:none"></div>
+            </div>
           </div>
-        </div>' +
-      '</div>';
 
-    // image error
-    var img = document.getElementById("trace");
-    img.onerror = function(){
-      var e = document.getElementById("imgErr");
-      e.style.display = "block";
-      e.textContent = "Could not load " + c.svg + ". Check filename and graphs/ folder.";
-    };
+          <div class="card">
+            <div class="row" style="justify-content:space-between">
+              <div style="font-weight:700">Reference & Notes</div>
+              <button id="toggleNotes" class="btn">Hide</button>
+            </div>
+            <div id="notesBox" style="display:block;margin-top:8px">
+              <div style="font-weight:700;margin:6px 0 4px">Normal values (simplified)</div>
+              <table style="margin-bottom:8px">
+                <tr><th colspan="5" style="text-align:left">TEG</th></tr>
+                <tr><th>R (min)</th><th>K (min)</th><th>α (deg)</th><th>MA (mm)</th><th>LY30 (%)</th></tr>
+                <tr>
+                  <td>${NORMALS.TEG.R[0]}–${NORMALS.TEG.R[1]}</td>
+                  <td>${NORMALS.TEG.K[0]}–${NORMALS.TEG.K[1]}</td>
+                  <td>${NORMALS.TEG.alpha[0]}–${NORMALS.TEG.alpha[1]}</td>
+                  <td>${NORMALS.TEG.MA[0]}–${NORMALS.TEG.MA[1]}</td>
+                  <td>${NORMALS.TEG.LY30[0]}–${NORMALS.TEG.LY30[1]}</td>
+                </tr>
+              </table>
+              <table>
+                <tr><th colspan="5" style="text-align:left">ROTEM</th></tr>
+                <tr><th>CT (s)</th><th>CFT (s)</th><th>α (deg)</th><th>MCF (mm)</th><th>LI30 (%)</th></tr>
+                <tr>
+                  <td>${NORMALS.ROTEM.CT[0]}–${NORMALS.ROTEM.CT[1]}</td>
+                  <td>${NORMALS.ROTEM.CFT[0]}–${NORMALS.ROTEM.CFT[1]}</td>
+                  <td>${NORMALS.ROTEM.alpha[0]}–${NORMALS.ROTEM.alpha[1]}</td>
+                  <td>${NORMALS.ROTEM.MCF[0]}–${NORMALS.ROTEM.MCF[1]}</td>
+                  <td>${NORMALS.ROTEM.LI30[0]}–${NORMALS.ROTEM.LI30[1]}</td>
+                </tr>
+              </table>
+              <ul class="muted" style="margin:10px 0 0 18px;line-height:1.4">
+                <li><b>R/CT ↑</b> → Plasma (coagulation factors).</li>
+                <li><b>K/CFT ↑ or α ↓</b> → Fibrinogen (cryo or concentrate).</li>
+                <li><b>MA/MCF ↓</b> → Platelets.</li>
+                <li><b>LY30 ↑ / LI30 ↓</b> → Consider antifibrinolytic (TXA) when appropriate.</li>
+              </ul>
+              <div class="muted" style="margin-top:10px;font-size:12px">Educational tool only; not for clinical decision-making.</div>
+            </div>
+          </div>
+        </div>`;
 
-    // toggles
-    document.getElementById("toggleParams").onclick = function(){
-      var pane = document.getElementById("params");
-      var open = pane.style.display !== "none";
-      pane.style.display = open ? "none" : "block";
-      this.textContent = open ? "Show parameters" : "Hide parameters";
-    };
-    document.getElementById("toggleNotes").onclick = function(){
-      var box = document.getElementById("notesBox");
-      var open = box.style.display !== "none";
-      box.style.display = open ? "none" : "block";
-      this.textContent = open ? "Show" : "Hide";
-    };
+      // image error
+      var img = document.getElementById("trace");
+      img.onerror = function(){
+        var e = document.getElementById("imgErr");
+        e.style.display = "block";
+        e.textContent = "Could not load " + c.svg + ". Check filename and graphs/ folder.";
+      };
 
-    // back/next/check
-    var backBtn = document.getElementById("backBtn");
-    backBtn.disabled = (ptr === 0);
-    backBtn.onclick = function(){ if(ptr>0){ ptr--; render(); } };
-    document.getElementById("nextBtn").onclick = function(){ ptr++; render(); };
-    document.getElementById("checkBtn").onclick = function(){ check(c); };
+      // toggles
+      document.getElementById("toggleParams").onclick = function(){
+        var pane = document.getElementById("params");
+        var open = pane.style.display !== "none";
+        pane.style.display = open ? "none" : "block";
+        this.textContent = open ? "Show parameters" : "Hide parameters";
+      };
+      document.getElementById("toggleNotes").onclick = function(){
+        var box = document.getElementById("notesBox");
+        var open = box.style.display !== "none";
+        box.style.display = open ? "none" : "block";
+        this.textContent = open ? "Show" : "Hide";
+      };
 
-    // answers (ARIA-pressed for accessibility)
-    Array.prototype.forEach.call(document.getElementById("condChoices").children, function(btn){
-      btn.setAttribute('aria-pressed', 'false');
-      btn.addEventListener("click", function(){
-        Array.prototype.forEach.call(document.getElementById("condChoices").children, function(b){
-          b.classList.remove("selected");
-          b.setAttribute('aria-pressed', 'false');
+      // back/next/check
+      var backBtn = document.getElementById("backBtn");
+      backBtn.disabled = (ptr === 0);
+      backBtn.onclick = function(){ if(ptr>0){ ptr--; render(); } };
+      document.getElementById("nextBtn").onclick = function(){ ptr++; render(); };
+      document.getElementById("checkBtn").onclick = function(){ check(c); };
+
+      // answer selection
+      Array.prototype.forEach.call(document.getElementById("condChoices").children, function(btn){
+        btn.setAttribute('aria-pressed', 'false');
+        btn.addEventListener("click", function(){
+          Array.prototype.forEach.call(document.getElementById("condChoices").children, function(b){
+            b.classList.remove("selected");
+            b.setAttribute('aria-pressed', 'false');
+          });
+          btn.classList.add("selected");
+          btn.setAttribute('aria-pressed', 'true');
         });
-        btn.classList.add("selected");
-        btn.setAttribute('aria-pressed', 'true');
       });
-    });
-    Array.prototype.forEach.call(document.getElementById("txChoices").children, function(btn){
-      btn.setAttribute('aria-pressed', 'false');
-      btn.addEventListener("click", function(){
-        var isSelected = btn.classList.toggle("selected");
-        btn.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
+      Array.prototype.forEach.call(document.getElementById("txChoices").children, function(btn){
+        btn.setAttribute('aria-pressed', 'false');
+        btn.addEventListener("click", function(){
+          var isSelected = btn.classList.toggle("selected");
+          btn.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
+        });
       });
-    });
+
+    } catch (err) {
+      // show any JS error in the UI so page never looks blank
+      main.innerHTML = `
+        <div class="error">
+          <div style="font-weight:700">Render error</div>
+          <div>${(err && err.message) ? err.message : String(err)}</div>
+          <pre style="white-space:pre-wrap;margin-top:8px">${(err && err.stack) ? err.stack : ''}</pre>
+        </div>`;
+      console.error(err);
+    }
   } // end render
 
   function getScore(){
@@ -379,8 +391,8 @@
     box.style.display = "block";
     box.className = "result " + (condOK && txOK ? "" : "bad");
     box.innerHTML =
-      "<div><b>Condition:</b> " + (condOK ? "✅ correct" : "❌ expected “" + c.condition + "”") + "</div>" +
-      "<div><b>Treatment:</b> " + (txOK ? "✅ correct" : "❌ expected " + c.therapies.map(function(k){return THERAPIES[k];}).join(", ")) + "</div>";
+      `<div><b>Condition:</b> ${condOK ? "✅ correct" : "❌ expected “" + c.condition + "”"}</div>
+       <div><b>Treatment:</b> ${txOK ? "✅ correct" : "❌ expected " + c.therapies.map(function(k){return THERAPIES[k];}).join(", ")}</div>`;
   }
 
   // boot
