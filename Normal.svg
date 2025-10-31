@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" xmlns:bx="https://boxy-svg.com">
+  <defs>
+    <bx:export>
+      <bx:file format="svg"/>
+    </bx:export>
+  </defs>
+  <path style="stroke: rgb(0, 0, 0); transform-box: fill-box; transform-origin: 50% 50%; stroke-width: 1.412;" d="M 85.364 213.696 C 80.162 70.463 367.929 221.4 410.975 221.401" transform="matrix(0.999848, -0.017452, 0.017452, 0.999848, 0, 0)"/>
+  <path style="stroke: rgb(0, 0, 0); stroke-width: 1.412; transform-origin: 247.099px 247.351px;" d="M 84.433 220.415 C 79.232 363.647 366.998 212.711 410.044 212.71" transform="matrix(0.999391, 0.034899, -0.034899, 0.999391, 0, 0)"/>
+  <rect x="378.735" y="214.659" width="57.801" height="7.707" style="stroke: rgb(0, 0, 0); stroke-width: 1.412;"/>
+  <rect x="54.537" y="211.769" width="57.801" height="7.707" style="stroke: rgb(0, 0, 0); stroke-width: 1.412;"/>
+</svg>
