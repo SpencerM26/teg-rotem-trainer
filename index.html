@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>TEG/ROTEM Interpretation Practice (Edu)</title>
+  <!-- Tailwind (CDN) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- React 18 (CDN) -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <!-- Lucide icons (optional) -->
+  <script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.js"></script>
+  <meta name="description" content="Educational TEG/ROTEM practice tool. Not for clinical use." />
+  <style>
+    html,body{height:100%}
+    .btn{ @apply px-3 py-2 rounded-xl border text-sm; }
+    .btn-solid{ @apply bg-blue-600 text-white border-blue-600 hover:bg-blue-700; }
+    .btn-ghost{ @apply bg-white hover:bg-gray-50; }
+    .chip{ @apply text-xs px-2 py-1 rounded-lg bg-gray-100; }
+  </style>
+</head>
+<body class="min-h-full bg-gray-50 text-gray-900">
+  <div id="root" class="p-4 md:p-8 max-w-6xl mx-auto"></div>
+
+  <script>
+  ;(()=> {
+    const { useState, useMemo, useEffect } = React;
+
+    const REF = {
+      TEG: {
+        labels: { R: "R (min)", K: "K (min)", alpha: "α (deg)", MA: "MA (mm)", LY30: "LY30 (%)" },
+        normals: { R: [5,10], K: [1,3], alpha: [53,72], MA: [50,70], LY30: [0,3] },
+        hints: {
+          R: "Prolonged R → plasma (factors) or protamine if heparin.",
+          K: "↑K / ↓α → fibrinogen (cryo/conc).",
+          alpha: "Low α → fibrinogen.",
+          MA: "Low MA → platelets.",
+          LY30: "High LY30 → antifibrinolytic (TXA) if appropriate."
+        }
+      },
+      ROTEM: {
+        labels: { CT: "CT (s)", CFT: "CFT (s)", alpha: "α (deg)", MCF: "MCF (mm)", LI30: "LI30 (%)" },
+        normals: { CT: [38,79], CFT: [34,159], alpha: [65,83], MCF: [50,70], LI30: [94,100] },
+        hints: {
+          CT: "Prolonged CT → plasma (factors) or protamine if heparin.",
+          CFT: "↑CFT / ↓α → fibrinogen (cryo/conc).",
+          alpha: "Low α → fibrinogen.",
+          MCF: "Low MCF → platelets.",
+          LI30: "Low LI30 → antifibrinolytic (TXA) if appropriate."
+        }
+      }
+    };
+
+    const THERAPIES = {
+      plasma: "Plasma (coag factors)",
+      fibrinogen: "Fibrinogen (cryo/conc)",
+      platelets: "Platelets",
+      txa: "TXA / antifibrinolytic",
+      protamine: "Protamine (suspected heparin)",
+      doNothing: "No product (observe/other causes)"
+    };
+
+    const CASES = [
+      { id:"case1", title:"Prolonged initiation (factors deficiency)",
+        scenario:"Post-CPB patient with ongoing oozing. Hb 9, platelets 180k.",
+        TEG:{ R:16, K:2.5, alpha:58, MA:62, LY30:1 },
+        ROTEM:{ CT:140, CFT:120, alpha:60, MCF:62, LI30:98 },
+        answers:["plasma"],
+        explanation:"Isolated initiation delay (R/CT prolonged) with otherwise near-normal kinetics/strength → replenish factors (plasma)."
+      },
+      { id:"case2", title:"Hypofibrinogenemia",
+        scenario:"PPH with brisk bleeding after placental removal.",
+        TEG:{ R:7, K:5, alpha:40, MA:58, LY30:1 },
+        ROTEM:{ CT:70, CFT:400, alpha:40, MCF:50, LI30:97 },
+        answers:["fibrinogen"],
+        explanation:"Slow kinetics (↑K/CFT, ↓α) point to low fibrinogen → give cryo/fibrinogen concentrate."
+      },
+      { id:"case3", title:"Thrombocytopenia / platelet dysfunction",
+        scenario:"Liver resection, platelet count 45k.",
+        TEG:{ R:8, K:2, alpha:55, MA:36, LY30:1 },
+        ROTEM:{ CT:65, CFT:150, alpha:62, MCF:34, LI30:98 },
+        answers:["platelets"],
+        explanation:"Clot strength low (↓MA/MCF) with initiation okay → platelets indicated."
+      },
+      { id:"case4", title:"Hyperfibrinolysis",
+        scenario:"Polytrauma with diffuse bleeding.",
+        TEG:{ R:8, K:2, alpha:60, MA:62, LY30:14 },
+        ROTEM:{ CT:70, CFT:140, alpha:65, MCF:62, LI30:60 },
+        answers:["txa"],
+        explanation:"Excess lysis (↑LY30 / low LI30) → antifibrinolytic (e.g., TXA) if no contraindication."
+      },
+      { id:"case5", title:"Heparin effect",
+        scenario:"Vascular case following systemic heparinization; anti-Xa elevated.",
+        TEG:{ R:25, K:2, alpha:60, MA:60, LY30:2 },
+        ROTEM:{ CT:250, CFT:130, alpha:68, MCF:60, LI30:98 },
+        answers:["protamine"],
+        explanation:"Marked initiation delay with heparin context → reverse with protamine rather than plasma."
+      },
+      { id:"case6", title:"Near-normal trace (no product)",
+        scenario:"ENT case with dry field; low concern for coagulopathy.",
+        TEG:{ R:7, K:1.5, alpha:65, MA:63, LY30:2 },
+        ROTEM:{ CT:70, CFT:120, alpha:70, MCF:64, LI30:98 },
+        answers:["doNothing"],
+        explanation:"Parameters within/near reference; search for surgical source or warming/calcium before products."
+      },
+      { id:"case7", title:"Combined: factors + fibrinogen",
+        scenario:"Massive transfusion in trauma; diffuse oozing.",
+        TEG:{ R:16, K:4, alpha:38, MA:58, LY30:2 },
+        ROTEM:{ CT:160, CFT:380, alpha:38, MCF:50, LI30:97 },
+        answers:["plasma","fibrinogen"],
+        explanation:"Prolonged initiation AND slow kinetics → address both factors (plasma) and fibrinogen."
+      },
+      { id:"case8", title:"Platelets + TXA",
+        scenario:"Pelvic fracture; on antiplatelet therapy.",
+        TEG:{ R:9, K:2, alpha:58, MA:40, LY30:8 },
+        ROTEM:{ CT:75, CFT:150, alpha:60, MCF:38, LI30:75 },
+        answers:["platelets","txa"],
+        explanation:"Weak clot (↓MA/MCF) and lysis → platelets + consider antifibrinolytic."
+      }
+    ];
+
+    const inRange = (v,[lo,hi]) => v>=lo && v<=hi;
+    const pick = arr => arr[Math.floor(Math.random()*arr.length)];
+
+    function TraceSVG({ mode, params }){
+      const norm = React.useMemo(()=>{
+        const r = REF[mode], n={};
+        Object.keys(r.normals).forEach(k=>{
+          const [lo,hi]=r.normals[k];
+          const raw = params[k] ?? (lo+hi)/2;
+          let p = (raw - lo)/(hi-lo);
+          n[k] = Math.max(0, Math.min(1, p));
+        });
+        return n;
+      },[mode, params]);
+
+      const widthMax = mode==='TEG' ? (params.MA??60) : (params.MCF??60);
+      const widthN = Math.max(0.2, Math.min(1,(widthMax-30)/50));
+      const openDelay = mode==='TEG' ? norm.R : norm.CT;
+      const slope = 1 - (mode==='TEG' ? norm.K : norm.CFT);
+      const lysis = mode==='TEG' ? norm.LY30 : (1 - norm.LI30);
+
+      const points=[];
+      const total=140;
+      for(let t=0;t<=total;t++){
+        const x=t;
+        let w=0;
+        if(t<openDelay*30){ w=0; }
+        else{
+          const grow=Math.min(1,(t-openDelay*30)/40*(0.6+slope*0.8));
+          const base=grow*widthN;
+          const decay=1-(Math.max(0,t-90)/50)*(lysis*0.8);
+          w=Math.max(0, base*decay);
+        }
+        points.push({x,w});
+      }
+      const pathTop = points.map(p=>`${p.x},${60 - p.w*40}`).join(' ');
+      const pathBot = points.slice().reverse().map(p=>`${p.x},${60 + p.w*40}`).join(' ');
+      return (
+        React.createElement('svg', {viewBox:"0 0 160 120", className:"w-full h-40"},
+          React.createElement('rect',{x:0,y:0,width:160,height:120,className:"fill-transparent"}),
+          React.createElement('polyline',{points:pathTop,className:"fill-none",strokeWidth:1}),
+          React.createElement('polyline',{points:pathBot,className:"fill-none",strokeWidth:1}),
+          React.createElement('polygon',{points:`${pathTop} ${pathBot}`, className:"opacity-70", fill:"black"})
+        )
+      );
+    }
+
+    function App(){
+      const url = new URL(window.location.href);
+      const initMode = url.searchParams.get('mode') === 'ROTEM' ? 'ROTEM' : 'TEG';
+      const [mode,setMode]=useState(initMode);
+      const [cases,setCases]=useState(CASES);
+      const [currentId,setCurrentId]=useState(()=> (window.location.hash||'').replace('#','') || cases[0].id);
+      useEffect(()=>{
+        const onHash=()=> setCurrentId((window.location.hash||'').replace('#','') || cases[0].id);
+        window.addEventListener('hashchange',onHash);
+        return ()=>window.removeEventListener('hashchange',onHash);
+      },[cases]);
+
+      const current = useMemo(()=> cases.find(c=>c.id===currentId) || cases[0], [cases,currentId]);
+      const params = current[mode];
+
+      const [selected,setSelected]=useState([]);
+      const [showAns,setShowAns]=useState(false);
+      const [notes,setNotes]=useState('');
+      const [compact,setCompact]=useState(false);
+      const [score,setScore]=useState(()=>{
+        try{return JSON.parse(localStorage.getItem('tegScore')||'{"right":0,"total":0}')}catch{return {right:0,total:0}}
+      });
+      useEffect(()=> localStorage.setItem('tegScore', JSON.stringify(score)), [score]);
+      useEffect(()=>{ setSelected([]); setShowAns(false); setNotes(''); },[currentId,mode]);
+
+      const r = REF[mode];
+      const toggleChoice = k => setSelected(s => s.includes(k) ? s.filter(x=>x!==k) : [...s,k]);
+      const nextCase = (rand=false)=>{
+        const idx = cases.findIndex(c=>c.id===current.id);
+        const nxt = rand ? pick(cases) : cases[(idx+1)%cases.length];
+        window.location.hash = '#'+nxt.id;
+      };
+      const check = ()=>{
+        const correct=new Set(current.answers);
+        const chosen=new Set(selected);
+        let ok=true;
+        for(const c of correct) if(!chosen.has(c)) ok=false;
+        for(const c of chosen) if(!correct.has(c)) ok=false;
+        setShowAns(true);
+        setScore(s=>({ right: s.right + (ok?1:0), total: s.total + 1 }));
+      };
+      const copyShare = async ()=>{
+        const u = `${location.origin}${location.pathname}?mode=${mode}#${current.id}`;
+        try{ await navigator.clipboard.writeText(u); alert('Link copied!'); }catch{ prompt('Copy this link:', u); }
+      };
+      const exportJSON = ()=>{
+        const blob = new Blob([JSON.stringify(cases,null,2)],{type:'application/json'});
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'teg_rotem_cases.json';
+        a.click();
+        URL.revokeObjectURL(a.href);
+      };
+      const importJSON = ()=>{
+        const text = prompt('Paste JSON array of cases:','');
+        if(!text) return;
+        try{
+          const parsed = JSON.parse(text);
+          if(!Array.isArray(parsed)) throw new Error('Not an array');
+          const ok = parsed.every(c=>c.id && c.TEG && c.ROTEM && Array.isArray(c.answers));
+          if(!ok) throw new Error('Invalid shape');
+          setCases(parsed);
+          setCurrentId(parsed[0].id);
+          alert('Imported '+parsed.length+' cases!');
+        }catch(e){ alert('Import failed: '+e.message); }
+      };
+
+      const isCorrect = showAns && selected.length>0
+        && selected.every(a=>current.answers.includes(a))
+        && selected.length===current.answers.length;
+
+      return (
+        React.createElement('div',{className:"space-y-4"},
+          React.createElement('div',{className:"flex items-center justify-between gap-3"},
+            React.createElement('h1',{className:"text-2xl md:text-3xl font-bold tracking-tight"}, "TEG/ROTEM Interpretation Practice"),
+            React.createElement('div',{className:"flex items-center gap-2"},
+              React.createElement('span',{className:"chip"},"Edu only"),
+              React.createElement('span',{className:"chip"},`Score ${score.right}/${score.total}`)
+            )
+          ),
+          React.createElement('div',{className:"flex gap-2"},
+            React.createElement('button',{className:`btn ${mode==='TEG'?'btn-solid':'btn-ghost'}`, onClick:()=>setMode('TEG')},"TEG"),
+            React.createElement('button',{className:`btn ${mode==='ROTEM'?'btn-solid':'btn-ghost'}`, onClick:()=>setMode('ROTEM')},"ROTEM")
+          ),
+          React.createElement('div',{className:"grid md:grid-cols-3 gap-4"},
+            // Left 2/3
+            React.createElement('div',{className:"md:col-span-2 space-y-4"},
+              React.createElement('div',{className:"bg-white rounded-2xl shadow p-4 md:p-6 space-y-4"},
+                React.createElement('div',{className:"flex items-start justify-between gap-3"},
+                  React.createElement('div',null,
+                    React.createElement('div',{className:"text-xs uppercase text-gray-500"},"Case"),
+                    React.createElement('div',{className:"text-lg font-semibold"}, current.title),
+                    React.createElement('div',{className:"text-sm text-gray-600 mt-1"}, current.scenario)
+                  ),
+                  React.createElement('div',{className:"flex items-center gap-2"},
+                    React.createElement('button',{className:"btn btn-ghost", onClick:()=>nextCase(false)},"Next"),
+                    React.createElement('button',{className:"btn btn-ghost", onClick:()=>nextCase(true)},"Random")
+                  )
+                ),
+                React.createElement('div',{className:"grid md:grid-cols-2 gap-4 items-center"},
+                  React.createElement('div',null,
+                    React.createElement('div',{className:"text-xs uppercase text-gray-500 mb-2"},"Generated trace (illustrative)"),
+                    React.createElement(TraceSVG,{mode, params})
+                  ),
+                  React.createElement('div',{className:"space-y-2"},
+                    React.createElement('div',{className:"text-xs uppercase text-gray-500"},"Parameters"),
+                    Object.entries(REF[mode].labels).map(([k,label])=>{
+                      const val = params[k];
+                      const normal = REF[mode].normals[k];
+                      const ok = inRange(val, normal);
+                      return React.createElement('div',{key:k,className:"flex items-baseline justify-between text-sm"},
+                        React.createElement('span',{className:"text-gray-600"}, label),
+                        React.createElement('span',{className:`font-semibold ${ok?'':'text-red-600'}`}, val)
+                      )
+                    })
+                  )
+                ),
+                React.createElement('div',null,
+                  React.createElement('div',{className:"text-xs uppercase text-gray-500 mb-1"},"Choose therapy"),
+                  React.createElement('div',{className:"grid grid-cols-2 md:grid-cols-3 gap-2"},
+                    Object.entries(THERAPIES).map(([k,txt])=>
+                      React.createElement('button',{
+                        key:k,
+                        className:`btn ${ (selected.includes(k)) ? 'btn-solid' : 'btn-ghost'} text-left`,
+                        onClick:()=>toggleChoice(k)
+                      }, (selected.includes(k)?'✓ ':'+ ')+txt)
+                    )
+                  ),
+                  React.createElement('div',{className:"flex flex-wrap items-center gap-2 mt-3"},
+                    React.createElement('button',{className:"btn btn-solid", onClick:check},"Check"),
+                    React.createElement('button',{className:"btn btn-ghost", onClick:()=>setShowAns(s=>!s)}, (showAns?'Hide':'Show')+" explanation"),
+                    React.createElement('button',{className:"btn btn-ghost", onClick:copyShare},"Copy share link"),
+                    React.createElement('label',{className:"flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none"},
+                      React.createElement('input',{type:"checkbox", checked:compact, onChange:e=>setCompact(e.target.checked)}),
+                      "Compact notes"
+                    )
+                  ),
+                  showAns && React.createElement('div',{className:`mt-4 p-3 rounded-2xl ${isCorrect?'bg-emerald-50':'bg-amber-50'}`},
+                    React.createElement('div',{className:"text-sm font-medium mb-1"},"Answer"),
+                    React.createElement('div',{className:"text-sm"},"Correct: "+ current.answers.map(a=>THERAPIES[a]).join(', ')),
+                    React.createElement('div',{className:"text-sm mt-2"}, current.explanation),
+                    React.createElement('div',{className:"text-xs text-gray-600 mt-2"},
+                      "Tip: ",
+                      Object.values(REF[mode].hints).map((h,i)=> React.createElement('span',{key:i,className:"mr-2"},"• "+h))
+                    )
+                  )
+                )
+              )
+            ),
+            // Right 1/3
+            React.createElement('div',{className:"space-y-4"},
+              React.createElement('div',{className:"bg-white rounded-2xl shadow p-4 md:p-6 space-y-3"},
+                React.createElement('div',{className:"text-sm font-semibold"},"Your notes"),
+                React.createElement('textarea',{
+                  className:"w-full border rounded-xl p-2 text-sm",
+                  rows: compact?3:6,
+                  value:notes,
+                  onChange:e=>setNotes(e.target.value),
+                  placeholder:"Jot down rationale, mnemonics, or links…"
+                })
+              ),
+              React.createElement('div',{className:"bg-white rounded-2xl shadow p-4 md:p-6 space-y-3"},
+                React.createElement('div',{className:"flex items-center justify-between"},
+                  React.createElement('div',{className:"text-sm font-semibold"},"Dataset"),
+                  React.createElement('span',{className:"chip"}, `${cases.length} cases`)
+                ),
+                React.createElement('div',{className:"flex items-center gap-2 flex-wrap"},
+                  React.createElement('button',{className:"btn btn-ghost", onClick:exportJSON},"Export JSON"),
+                  React.createElement('button',{className:"btn btn-ghost", onClick:importJSON},"Import JSON")
+                ),
+                React.createElement('div',{className:"text-xs text-gray-600"},
+                  "Export your cases and share the file with classmates. Anyone can import to play your set."
+                )
+              ),
+              React.createElement('div',{className:"bg-white rounded-2xl shadow p-4 md:p-6 space-y-2"},
+                React.createElement('div',{className:"text-sm font-semibold"},"Quick reference"),
+                React.createElement('ul',{className:"text-sm mt-1 list-disc pl-5 space-y-1"},
+                  React.createElement('li',null, React.createElement('b',null,"R/CT ↑")," → plasma (consider protamine if heparin)."),
+                  React.createElement('li',null, React.createElement('b',null,"K/CFT ↑ or α ↓")," → fibrinogen (cryo/conc)."),
+                  React.createElement('li',null, React.createElement('b',null,"MA/MCF ↓")," → platelets."),
+                  React.createElement('li',null, React.createElement('b',null,"LY30 ↑ / LI30 ↓")," → antifibrinolytic (TXA) if appropriate.")
+                )
+              ),
+              React.createElement('div',{className:"bg-white rounded-2xl shadow p-4 md:p-6"},
+                React.createElement('div',{className:"text-xs text-gray-600"},
+                  "Educational use only. Not medical advice or a clinical decision tool."
+                )
+              )
+            )
+          )
+        )
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(React.createElement(App));
+    if (window.lucide) window.lucide.createIcons();
+  })();
+  </script>
+</body>
+</html>
