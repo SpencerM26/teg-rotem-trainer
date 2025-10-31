@@ -22,7 +22,9 @@
   .btn.primary{background:#1b2437;border-color:#32415a}
   .btn.selected{background:var(--accent);color:#0a0f12;border-color:var(--accent)}
   .choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
-  img.trace{display:block;width:100%;height:auto;background:transparent;border-radius:12px;border:1px solid #2a3140}
+  /* WHITE background so black SVGs show clearly */
+  .trace-wrap{background:#ffffff;border-radius:12px;border:1px solid #2a3140;padding:8px}
+  img.trace{display:block;width:100%;height:auto;background:#ffffff;border-radius:8px}
   .params{margin-top:8px;border-top:1px dashed #2a3140;padding-top:8px}
   table{width:100%;border-collapse:collapse;font-size:14px}
   th,td{padding:6px 8px;border-bottom:1px solid #212838;text-align:left}
@@ -47,19 +49,9 @@
 (function(){
   // helpers
   function $(sel){ return document.querySelector(sel); }
-  function el(tag, attrs, html){
-    var n = document.createElement(tag);
-    if(attrs){ for(var k in attrs){ n.setAttribute(k, attrs[k]); } }
-    if(html != null){ n.innerHTML = html; }
-    return n;
-  }
-  function shuffled(a){
-    var x=a.slice();
-    for(var i=x.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=x[i]; x[i]=x[j]; x[j]=t; }
-    return x;
-  }
+  function shuffled(a){ var x=a.slice(); for(var i=x.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=x[i]; x[i]=x[j]; x[j]=t; } return x; }
 
-  // enums
+  // answer sets
   var CONDITIONS = [
     "Normal",
     "Anticoagulants / Factor deficiency",
@@ -79,20 +71,20 @@
   };
   var NORMALS = {
     TEG: { R:[5,10], K:[1,3], alpha:[53,72], MA:[50,70], LY30:[0,3] },
-    ROTEM: { CT:[38,79], CFT:[34,159], alpha:[65,83], MCF:[50,72], LI30:[94,100] }
+    ROTEM:{ CT:[38,79], CFT:[34,159], alpha:[65,83], MCF:[50,72], LI30:[94,100] }
   };
 
-  // 14 scenarios
+  // 14 scenarios (4–5 sentence vignettes; diagnosis not stated)
   var CASES = [
     // NORMAL
     { id:"normal-1", svg:"graphs/Normal.svg", condition:"Normal",
-      description:"Post-op check: dry field, normothermic, ionized Ca normal.",
+      description:"A 54-year-old after elective hernia repair is reassessed in PACU for minimal oozing at the incision. He is warm, normotensive, and not acidotic. Ionized calcium is within the normal range and no anticoagulants were given intra-op. The surgical field has remained dry for 20 minutes. A viscoelastic trace is obtained for teaching purposes.",
       teg:{R:7, K:1.5, alpha:65, MA:62, LY30:1},
       rotem:{CT:70, CFT:120, alpha:70, MCF:62, LI30:98},
       therapies:["none"]
     },
     { id:"normal-2", svg:"graphs/Normal.svg", condition:"Normal",
-      description:"Trauma bay re-evaluation after hemostasis.",
+      description:"A 32-year-old trauma patient returns to the bay after pelvic fixation. External bleeding has stopped and blood pressure is stable without vasopressors. Core temperature is 36.7 °C and ionized calcium is normal. No antiplatelet therapy or anticoagulants are reported. A trace is performed to confirm there is no global coagulopathy.",
       teg:{R:8, K:1.8, alpha:63, MA:60, LY30:2},
       rotem:{CT:75, CFT:140, alpha:68, MCF:60, LI30:97},
       therapies:["none"]
@@ -100,13 +92,13 @@
 
     // ANTICOAGULANTS / FACTOR DEFICIENCY
     { id:"anticoag-1", svg:"graphs/anticoagulant_factor_deficiency.svg", condition:"Anticoagulants / Factor deficiency",
-      description:"Post-CPB oozing; ACT prolonged; platelets acceptable.",
+      description:"A 68-year-old post-cardiopulmonary bypass continues to ooze from chest-tube sites. Temperature and calcium have been corrected and platelet count is 180 × 10⁹/L. ACT remains prolonged despite adequate protamine dosing by weight earlier. There is no history of antiplatelet agents. A viscoelastic study is obtained to evaluate initiation of clotting.",
       teg:{R:16, K:2.5, alpha:58, MA:62, LY30:1},
       rotem:{CT:140, CFT:150, alpha:60, MCF:62, LI30:98},
       therapies:["plasma"]
     },
     { id:"anticoag-2", svg:"graphs/anticoagulant_factor_deficiency.svg", condition:"Anticoagulants / Factor deficiency",
-      description:"Vascular case with recent heparin dose; anti-Xa elevated.",
+      description:"A 72-year-old undergoing fem-pop bypass receives systemic heparinization. Near the end of the case there is persistent oozing from needle holes. Anti-Xa level is elevated and platelet count is normal. Temperature and calcium are normal. A viscoelastic trace is obtained to guide reversal.",
       teg:{R:24, K:2, alpha:60, MA:60, LY30:1},
       rotem:{CT:240, CFT:140, alpha:65, MCF:60, LI30:98},
       therapies:["protamine"]
@@ -114,13 +106,13 @@
 
     // PLATELET BLOCKERS
     { id:"plate-1", svg:"graphs/Platelet_blockers.svg", condition:"Platelet blockers",
-      description:"On clopidogrel; diffuse oozing; platelets 120k.",
+      description:"A 66-year-old with recent coronary stent takes clopidogrel through the week prior to urgent cholecystectomy. Intra-operative field shows diffuse oozing that is not pulsatile. Hemoglobin is stable and temperature is normal. Coagulation factors are not prolonged on routine labs. A teaching trace is obtained to assess clot strength.",
       teg:{R:8, K:2, alpha:55, MA:40, LY30:1},
       rotem:{CT:75, CFT:160, alpha:60, MCF:38, LI30:98},
       therapies:["platelets"]
     },
     { id:"plate-2", svg:"graphs/Platelet_blockers.svg", condition:"Platelet blockers",
-      description:"Thrombocytopenia (45k) during liver case; initiation normal.",
+      description:"A 58-year-old with cirrhosis undergoes hepatic resection. Platelet count drops to 45 × 10⁹/L while fibrinogen and PT are near baseline. There is steady oozing from raw surfaces without large clots. The patient is warm and ionized calcium is normal. A viscoelastic trace is obtained to evaluate clot firmness.",
       teg:{R:7, K:1.8, alpha:60, MA:36, LY30:2},
       rotem:{CT:70, CFT:150, alpha:62, MCF:34, LI30:97},
       therapies:["platelets"]
@@ -128,13 +120,13 @@
 
     // FIBRINOLYSIS
     { id:"lysis-1", svg:"graphs/fibrinolysis.svg", condition:"Fibrinolysis",
-      description:"Polytrauma with early narrowing of trace after peak.",
+      description:"A 24-year-old after high-speed MVC arrives with pelvic fracture and hypotension requiring transfusion. Core temperature is now 36.5 °C and calcium has been repleted. After initial control of bleeding, oozing returns within minutes and clots appear fragile. D-dimer is elevated. A viscoelastic trace is performed to evaluate for breakdown of formed clot.",
       teg:{R:8, K:2, alpha:60, MA:62, LY30:14},
       rotem:{CT:70, CFT:140, alpha:65, MCF:62, LI30:60},
       therapies:["txa"]
     },
     { id:"lysis-2", svg:"graphs/fibrinolysis.svg", condition:"Fibrinolysis",
-      description:"Major ortho case; recurrent bleeding and increasing lysis.",
+      description:"A 72-year-old after major hip arthroplasty develops persistent drain output despite hemostasis in the field. Hemodynamics are stable and temperature is normal. Laboratory fibrinogen is borderline low-normal but D-dimer is increased. Clots formed at the wound bed appear to melt away. A viscoelastic study is obtained to assess for excessive lysis.",
       teg:{R:8, K:2, alpha:60, MA:58, LY30:10},
       rotem:{CT:70, CFT:150, alpha:63, MCF:58, LI30:70},
       therapies:["txa"]
@@ -142,13 +134,13 @@
 
     // HYPERCOAGULABLE
     { id:"hyper-1", svg:"graphs/hypercoaguable.svg", condition:"Hypercoagulable state",
-      description:"Accelerated clot formation and high amplitude; minimal bleeding.",
+      description:"A 46-year-old undergoing laparoscopic colectomy has brisk clot formation in the suction canister tubing. There is no bleeding and blood pressure is normal without products. The patient has a history of prior DVT and is not on anticoagulation. Routine labs are normal. A viscoelastic trace is obtained to characterize clot kinetics.",
       teg:{R:4, K:0.8, alpha:78, MA:74, LY30:1},
       rotem:{CT:45, CFT:60, alpha:80, MCF:72, LI30:98},
       therapies:["none"]
     },
     { id:"hyper-2", svg:"graphs/hypercoaguable.svg", condition:"Hypercoagulable state",
-      description:"Thrombophilia workup; fast kinetics, strong clot.",
+      description:"A 35-year-old trauma patient stabilizes quickly after minor transfusion. The field is dry and line sites clot rapidly. Temperature and electrolytes are normal, and the patient denies antiplatelet or anticoagulant use. Clinicians obtain a viscoelastic study to document overall clot strength and speed.",
       teg:{R:5, K:1, alpha:75, MA:70, LY30:1},
       rotem:{CT:50, CFT:80, alpha:78, MCF:68, LI30:99},
       therapies:["none"]
@@ -156,13 +148,13 @@
 
     // DIC (EARLY)
     { id:"dicE-1", svg:"graphs/DIC_early.svg", condition:"DIC (early)",
-      description:"Sepsis—rapid formation with lysis component.",
+      description:"A 62-year-old with septic shock is resuscitated and rewarmed. After initial improvement, diffuse oozing develops and clots at line sites seem to thin quickly. Fibrin split products are elevated and platelets are mid-normal. The team requests a viscoelastic trace to evaluate rapid clot formation with subsequent instability.",
       teg:{R:5, K:1, alpha:72, MA:68, LY30:12},
       rotem:{CT:55, CFT:90, alpha:76, MCF:66, LI30:75},
       therapies:["txa"]
     },
     { id:"dicE-2", svg:"graphs/DIC_early.svg", condition:"DIC (early)",
-      description:"Hypercoagulable pattern with early breakdown.",
+      description:"A 70-year-old with abdominal sepsis remains hemodynamically stable after fluids and antibiotics. Clots initially appear robust but quickly diminish at surgical drains. Temperature and calcium are corrected; platelet count is adequate. A viscoelastic test is sent to assess for early clot breakdown following rapid formation.",
       teg:{R:6, K:1.2, alpha:70, MA:65, LY30:15},
       rotem:{CT:60, CFT:100, alpha:74, MCF:64, LI30:70},
       therapies:["txa"]
@@ -170,13 +162,13 @@
 
     // DIC (LATE)
     { id:"dicL-1", svg:"graphs/DIC_late.svg", condition:"DIC (late)",
-      description:"Severe sepsis—consumption coagulopathy.",
+      description:"A 67-year-old with refractory septic shock has progressive oozing from mucosal surfaces. Platelet count and fibrinogen are now low, and PT/INR is prolonged. Temperature and calcium have been corrected but clots do not form well. A viscoelastic study is performed to characterize global impairment of clot generation and firmness.",
       teg:{R:18, K:5, alpha:35, MA:34, LY30:8},
       rotem:{CT:180, CFT:380, alpha:38, MCF:32, LI30:85},
       therapies:["plasma","fibrinogen","platelets"]
     },
     { id:"dicL-2", svg:"graphs/DIC_late.svg", condition:"DIC (late)",
-      description:"End-stage DIC—global failure of clot formation.",
+      description:"A 59-year-old with multiorgan failure develops persistent mucosal bleeding and oozing from venipuncture sites. Laboratory testing shows very low fibrinogen and thrombocytopenia with prolonged clotting times. Even with warming and calcium repletion, clot formation is poor. A viscoelastic trace is obtained to guide comprehensive replacement therapy.",
       teg:{R:20, K:6, alpha:30, MA:28, LY30:10},
       rotem:{CT:200, CFT:420, alpha:35, MCF:28, LI30:80},
       therapies:["plasma","fibrinogen","platelets"]
@@ -186,7 +178,6 @@
   // state
   var order = shuffled(CASES.map(function(_,i){ return i; }));
   var ptr = 0;
-  var scoreboard = { right:0, total:0 };
 
   function render(){
     var main = document.getElementById("main");
@@ -194,26 +185,24 @@
       main.innerHTML =
         '<div class="done">' +
           '<h2>All 14 scenarios completed 🎉</h2>' +
-          '<p>Final score: <b>' + scoreboard.right + '/' + scoreboard.total + '</b></p>' +
+          '<p>Final score: <b>' + getScore().right + '/' + getScore().total + '</b></p>' +
           '<div class="row" style="margin-top:8px">' +
             '<button class="btn" id="restartBtn">Restart (reshuffle)</button>' +
           '</div>' +
         '</div>';
       document.getElementById("restartBtn").onclick = function(){
         order = shuffled(CASES.map(function(_,i){ return i; }));
-        ptr = 0; scoreboard.right = 0; scoreboard.total = 0;
-        document.getElementById("score").textContent = "Score: 0/0";
-        render();
+        ptr = 0; setScore(0,0); document.getElementById("score").textContent = "Score: 0/0"; render();
       };
       return;
     }
 
     var c = CASES[order[ptr]];
 
+    // build buttons
     var condButtons = CONDITIONS.map(function(name){
       return '<button class="btn" data-cond="'+name+'">'+name+'</button>';
     }).join('');
-
     var txButtons = Object.keys(THERAPIES).map(function(k){
       return '<button class="btn" data-tx="'+k+'">'+THERAPIES[k]+'</button>';
     }).join('');
@@ -224,8 +213,8 @@
           '<div class="row" style="justify-content:space-between">' +
             '<div>' +
               '<div class="muted" style="text-transform:uppercase;font-size:12px">Case</div>' +
-              '<div class="title">' + c.condition + '</div>' +
-              '<div class="muted" style="margin-top:2px">' + c.description + '</div>' +
+              '<div class="title">Interpret this viscoelastic profile</div>' +
+              '<div class="muted" style="margin-top:2px">'+ c.description +'</div>' +
             '</div>' +
             '<div class="row"><span class="pill">Progress ' + (ptr+1) + '/14</span></div>' +
           '</div>' +
@@ -233,7 +222,7 @@
           '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start;margin-top:12px">' +
             '<div>' +
               '<div class="muted" style="text-transform:uppercase;font-size:12px;margin-bottom:6px">Trace (SVG)</div>' +
-              '<img id="trace" class="trace" alt="trace" src="' + c.svg + '">' +
+              '<div class="trace-wrap"><img id="trace" class="trace" alt="trace" src="' + c.svg + '"></div>' +
               '<div id="imgErr" class="error" style="display:none"></div>' +
             '</div>' +
 
@@ -305,7 +294,7 @@
               '<li><b>MA/MCF ↓</b> → Platelets.</li>' +
               '<li><b>LY30 ↑ / LI30 ↓</b> → Antifibrinolytic (TXA) if appropriate.</li>' +
             '</ul>' +
-            '<div class="muted" style="margin-top:10px;font-size:12px">Educational tool only; not for clinical use.</div>' +
+            '<div class="muted" style="margin-top:10px;font-size:12px">Educational tool only; not for clinical decision-making.</div>' +
           '</div>' +
         '</div>' +
       '</div>';
@@ -332,15 +321,13 @@
       this.textContent = open ? "Show" : "Hide";
     };
 
-    // single-select condition
+    // answer controls
     Array.prototype.forEach.call(document.getElementById("condChoices").children, function(btn){
       btn.addEventListener("click", function(){
         Array.prototype.forEach.call(document.getElementById("condChoices").children, function(b){ b.classList.remove("selected"); });
         btn.classList.add("selected");
       });
     });
-
-    // multi-select therapies
     Array.prototype.forEach.call(document.getElementById("txChoices").children, function(btn){
       btn.addEventListener("click", function(){ btn.classList.toggle("selected"); });
     });
@@ -349,6 +336,13 @@
     document.getElementById("nextBtn").onclick = function(){ ptr++; render(); };
   }
 
+  function getScore(){
+    var sEl = document.getElementById("score");
+    var m = sEl.textContent.match(/(\d+)\/(\d+)/);
+    return m ? {right:parseInt(m[1],10), total:parseInt(m[2],10)} : {right:0,total:0};
+  }
+  function setScore(r,t){ document.getElementById("score").textContent = "Score: " + r + "/" + t; }
+
   function check(c){
     var chosenCondBtn = document.querySelector('#condChoices .btn.selected');
     var chosenCond = chosenCondBtn ? chosenCondBtn.getAttribute('data-cond') : null;
@@ -356,17 +350,13 @@
       document.querySelectorAll('#txChoices .btn.selected'),
       function(b){ return b.getAttribute('data-tx'); }
     ).sort();
-
     var requiredTx = c.therapies.slice().sort();
+
     var condOK = (chosenCond === c.condition);
     var txOK = JSON.stringify(chosenTx) === JSON.stringify(requiredTx);
 
-    // score
-    var sEl = document.getElementById("score");
-    var t = sEl.textContent.match(/(\d+)\/(\d+)/);
-    var r = t ? {right:parseInt(t[1],10), total:parseInt(t[2],10)} : {right:0,total:0};
-    r.total += 1; if(condOK && txOK) r.right += 1;
-    sEl.textContent = "Score: " + r.right + "/" + r.total;
+    var sc = getScore();
+    sc.total += 1; if(condOK && txOK) sc.right += 1; setScore(sc.right, sc.total);
 
     var box = document.getElementById("result");
     box.style.display = "block";
@@ -377,9 +367,7 @@
   }
 
   // boot
-  document.addEventListener("DOMContentLoaded", function(){
-    render();
-  });
+  document.addEventListener("DOMContentLoaded", function(){ render(); });
 })();
 </script>
 </body>
