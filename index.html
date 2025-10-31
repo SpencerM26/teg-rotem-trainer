@@ -21,6 +21,7 @@
   .btn:hover{border-color:#3a4a61}
   .btn.primary{background:#1b2437;border-color:#32415a}
   .btn.selected{background:var(--accent);color:#0a0f12;border-color:var(--accent)}
+  .btn[disabled]{opacity:.5;cursor:not-allowed}
   .choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
   /* WHITE background so black SVGs show clearly */
   .trace-wrap{background:#ffffff;border-radius:12px;border:1px solid #2a3140;padding:8px}
@@ -55,7 +56,7 @@
   var CONDITIONS = [
     "Normal",
     "Anticoagulants / Factor deficiency",
-    "Platelet blockers",
+    "Abnormal platelet function / antiplatelet agent",
     "Fibrinolysis",
     "Hypercoagulable state",
     "DIC (early)",
@@ -74,7 +75,7 @@
     ROTEM:{ CT:[38,79], CFT:[34,159], alpha:[65,83], MCF:[50,72], LI30:[94,100] }
   };
 
-  // 14 scenarios (4–5 sentence vignettes; diagnosis not stated)
+  // 14 scenarios (diagnosis not stated)
   var CASES = [
     // NORMAL
     { id:"normal-1", svg:"graphs/Normal.svg", condition:"Normal",
@@ -104,14 +105,14 @@
       therapies:["protamine"]
     },
 
-    // PLATELET BLOCKERS
-    { id:"plate-1", svg:"graphs/Platelet_blockers.svg", condition:"Platelet blockers",
+    // ABNORMAL PLATELET FUNCTION / ANTIPLATELET
+    { id:"plate-1", svg:"graphs/Platelet_blockers.svg", condition:"Abnormal platelet function / antiplatelet agent",
       description:"A 66-year-old with recent coronary stent takes clopidogrel through the week prior to urgent cholecystectomy. Intra-operative field shows diffuse oozing that is not pulsatile. Hemoglobin is stable and temperature is normal. Coagulation factors are not prolonged on routine labs. A teaching trace is obtained to assess clot strength.",
       teg:{R:8, K:2, alpha:55, MA:40, LY30:1},
       rotem:{CT:75, CFT:160, alpha:60, MCF:38, LI30:98},
       therapies:["platelets"]
     },
-    { id:"plate-2", svg:"graphs/Platelet_blockers.svg", condition:"Platelet blockers",
+    { id:"plate-2", svg:"graphs/Platelet_blockers.svg", condition:"Abnormal platelet function / antiplatelet agent",
       description:"A 58-year-old with cirrhosis undergoes hepatic resection. Platelet count drops to 45 × 10⁹/L while fibrinogen and PT are near baseline. There is steady oozing from raw surfaces without large clots. The patient is warm and ionized calcium is normal. A viscoelastic trace is obtained to evaluate clot firmness.",
       teg:{R:7, K:1.8, alpha:60, MA:36, LY30:2},
       rotem:{CT:70, CFT:150, alpha:62, MCF:34, LI30:97},
@@ -184,7 +185,7 @@
     if(ptr >= order.length){
       main.innerHTML =
         '<div class="done">' +
-          '<h2>All 14 scenarios completed 🎉</h2>' +
+          '<h2>All ' + CASES.length + ' scenarios completed 🎉</h2>' +
           '<p>Final score: <b>' + getScore().right + '/' + getScore().total + '</b></p>' +
           '<div class="row" style="margin-top:8px">' +
             '<button class="btn" id="restartBtn">Restart (reshuffle)</button>' +
@@ -216,13 +217,13 @@
               '<div class="title">Interpret this viscoelastic profile</div>' +
               '<div class="muted" style="margin-top:2px">'+ c.description +'</div>' +
             '</div>' +
-            '<div class="row"><span class="pill">Progress ' + (ptr+1) + '/14</span></div>' +
+            '<div class="row"><span class="pill">Progress ' + (ptr+1) + '/' + CASES.length + '</span></div>' +
           '</div>' +
 
           '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start;margin-top:12px">' +
             '<div>' +
               '<div class="muted" style="text-transform:uppercase;font-size:12px;margin-bottom:6px">Trace (SVG)</div>' +
-              '<div class="trace-wrap"><img id="trace" class="trace" alt="trace" src="' + c.svg + '"></div>' +
+              '<div class="trace-wrap"><img id="trace" class="trace" alt="' + c.id + ' viscoelastic trace" src="' + c.svg + '"></div>' +
               '<div id="imgErr" class="error" style="display:none"></div>' +
             '</div>' +
 
@@ -251,6 +252,7 @@
             '<div class="choices" id="txChoices">' + txButtons + '</div>' +
 
             '<div class="row" style="margin-top:10px">' +
+              '<button id="backBtn" class="btn">Back</button>' +
               '<button id="checkBtn" class="btn">Check</button>' +
               '<button id="nextBtn" class="btn primary">Next</button>' +
             '</div>' +
@@ -262,9 +264,9 @@
         '<div class="card">' +
           '<div class="row" style="justify-content:space-between">' +
             '<div style="font-weight:700">Reference & Notes</div>' +
-            '<button id="toggleNotes" class="btn">Show</button>' +
+            '<button id="toggleNotes" class="btn">Hide</button>' +
           '</div>' +
-          '<div id="notesBox" style="display:none;margin-top:8px">' +
+          '<div id="notesBox" style="display:block;margin-top:8px">' +
             '<div style="font-weight:700;margin:6px 0 4px">Normal values (simplified)</div>' +
             '<table style="margin-bottom:8px">' +
               '<tr><th colspan="5" style="text-align:left">TEG</th></tr>' +
@@ -321,19 +323,32 @@
       this.textContent = open ? "Show" : "Hide";
     };
 
-    // answer controls
+    // back/next/check
+    var backBtn = document.getElementById("backBtn");
+    backBtn.disabled = (ptr === 0);
+    backBtn.onclick = function(){ if(ptr>0){ ptr--; render(); } };
+    document.getElementById("nextBtn").onclick = function(){ ptr++; render(); };
+    document.getElementById("checkBtn").onclick = function(){ check(c); };
+
+    // answers (add ARIA pressed state management)
     Array.prototype.forEach.call(document.getElementById("condChoices").children, function(btn){
+      btn.setAttribute('aria-pressed', 'false');
       btn.addEventListener("click", function(){
-        Array.prototype.forEach.call(document.getElementById("condChoices").children, function(b){ b.classList.remove("selected"); });
+        Array.prototype.forEach.call(document.getElementById("condChoices").children, function(b){
+          b.classList.remove("selected");
+          b.setAttribute('aria-pressed', 'false');
+        });
         btn.classList.add("selected");
+        btn.setAttribute('aria-pressed', 'true');
       });
     });
     Array.prototype.forEach.call(document.getElementById("txChoices").children, function(btn){
-      btn.addEventListener("click", function(){ btn.classList.toggle("selected"); });
+      btn.setAttribute('aria-pressed', 'false');
+      btn.addEventListener("click", function(){
+        var isSelected = btn.classList.toggle("selected");
+        btn.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
+      });
     });
-
-    document.getElementById("checkBtn").onclick = function(){ check(c); };
-    document.getElementById("nextBtn").onclick = function(){ ptr++; render(); };
   }
 
   function getScore(){
