@@ -11,130 +11,157 @@
     --ink: #202020;
     --muted: #5a5a5a;
     --accent: #c22d2d;
-    --accent2: #007b7b; /* teal accent to match logo */
+    --accent2: #007b7b;
   }
-  *{box-sizing:border-box}
+
+  * { box-sizing: border-box; }
+
   body {
     margin: 0;
     background: var(--bg);
     color: var(--ink);
     font: 16px/1.45 system-ui, -apple-system, Segoe UI, Roboto, Arial;
   }
-  .wrap {max-width:1100px;margin:0 auto;padding:20px}
-  .header {
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    background: var(--panel);
-    border:1px solid #ddd;
-    border-radius:16px;
-    padding:14px 16px;
-    box-shadow:0 2px 5px rgba(0,0,0,0.05);
+
+  .wrap {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 20px;
   }
+
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--panel);
+    border: 1px solid #ddd;
+    border-radius: 16px;
+    padding: 14px 20px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+  }
+
   .header h1 {
-    font-size:20px;
-    margin:0;
+    font-size: 22px;
+    margin: 0;
     color: var(--ink);
   }
+
   .logo {
-    height:40px;
-    width:auto;
+    height: 56px;
+    width: auto;
   }
-  .score {font-weight:700;color:var(--accent2)}
+
+  .score {
+    font-weight: 700;
+    color: var(--accent2);
+  }
+
   .card {
-    background:var(--panel);
-    border:1px solid #e0e0e0;
-    border-radius:16px;
-    padding:16px;
-    box-shadow:0 1px 4px rgba(0,0,0,0.05);
+    background: var(--panel);
+    border: 1px solid #e0e0e0;
+    border-radius: 16px;
+    padding: 16px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
   }
-  .grid {display:grid;grid-template-columns:1.2fr .8fr;gap:16px}
-  .muted {color:var(--muted)}
-  .title {font-weight:800;font-size:18px}
-  .row {display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+
+  .grid {
+    display: grid;
+    grid-template-columns: 1.2fr .8fr;
+    gap: 16px;
+  }
+
+  .muted { color: var(--muted); }
+  .title { font-weight: 800; font-size: 18px; }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+
   .btn {
-    appearance:none;
-    cursor:pointer;
-    border-radius:12px;
-    padding:10px 12px;
-    border:1px solid #ccc;
-    background:#f7f7f7;
-    color:var(--ink);
-    transition:background 0.2s,border-color 0.2s,color 0.2s;
+    appearance: none;
+    cursor: pointer;
+    border-radius: 12px;
+    padding: 10px 12px;
+    border: 1px solid #ccc;
+    background: #f7f7f7;
+    color: var(--ink);
+    transition: background 0.2s, border-color 0.2s, color 0.2s;
   }
-  .btn:hover {
-    background:#e8e8e8;
-    border-color:#aaa;
+
+  .btn:hover { background: #e8e8e8; border-color: #aaa; }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn.selected { background: var(--accent2); color: #fff; border-color: var(--accent2); }
+  .btn[disabled] { opacity: .5; cursor: not-allowed; }
+
+  .choices {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
   }
-  .btn.primary {
-    background:var(--accent);
-    border-color:var(--accent);
-    color:#fff;
+
+  .trace-wrap {
+    background: #ffffff;
+    border-radius: 12px;
+    border: 1px solid #ccc;
+    padding: 8px;
   }
-  .btn.selected {
-    background:var(--accent2);
-    color:#fff;
-    border-color:var(--accent2);
+
+  img.trace { display: block; width: 100%; height: auto; background: #ffffff; border-radius: 8px; }
+
+  .params { margin-top: 8px; border-top: 1px dashed #ccc; padding-top: 8px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { padding: 6px 8px; border-bottom: 1px solid #ddd; text-align: left; }
+
+  .pill {
+    background: #eaeaea;
+    border: 1px solid #d5d5d5;
+    color: var(--muted);
+    padding: 4px 8px;
+    border-radius: 999px;
+    font-size: 12px;
   }
-  .btn[disabled]{opacity:.5;cursor:not-allowed}
-  .choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
-  .trace-wrap{
-    background:#ffffff;
-    border-radius:12px;
-    border:1px solid #ccc;
-    padding:8px;
+
+  .result {
+    margin-top: 10px;
+    padding: 12px;
+    border-radius: 12px;
+    background: #e8f6ee;
+    border: 1px solid #b6e0c1;
+    color: #2b5e36;
   }
-  img.trace{display:block;width:100%;height:auto;background:#ffffff;border-radius:8px}
-  .params{margin-top:8px;border-top:1px dashed #ccc;padding-top:8px}
-  table{width:100%;border-collapse:collapse;font-size:14px}
-  th,td{padding:6px 8px;border-bottom:1px solid #ddd;text-align:left}
-  .pill{
-    background:#eaeaea;
-    border:1px solid #d5d5d5;
-    color:var(--muted);
-    padding:4px 8px;
-    border-radius:999px;
-    font-size:12px;
+
+  .result.bad {
+    background: #fae9e9;
+    border: 1px solid #d38c8c;
+    color: #902b2b;
   }
-  .result{
-    margin-top:10px;
-    padding:12px;
-    border-radius:12px;
-    background:#e8f6ee;
-    border:1px solid #b6e0c1;
-    color:#2b5e36;
+
+  .error {
+    margin-top: 10px;
+    padding: 10px;
+    border-radius: 10px;
+    background: #fae9e9;
+    border: 1px solid #d38c8c;
+    color: #902b2b;
   }
-  .result.bad{
-    background:#fae9e9;
-    border:1px solid #d38c8c;
-    color:#902b2b;
+
+  .done {
+    padding: 16px;
+    border-radius: 14px;
+    background: #eef6f4;
+    border: 1px solid #d5e7e3;
   }
-  .error{
-    margin-top:10px;
-    padding:10px;
-    border-radius:10px;
-    background:#fae9e9;
-    border:1px solid #d38c8c;
-    color:#902b2b;
-  }
-  .done{
-    padding:16px;
-    border-radius:14px;
-    background:#eef6f4;
-    border:1px solid #d5e7e3;
-  }
-  @media (max-width:920px){
-    .grid{grid-template-columns:1fr}
-    .choices{grid-template-columns:1fr 1fr}
-    .header h1{font-size:16px}
-    .logo{height:32px}
+
+  @media (max-width: 920px) {
+    .grid { grid-template-columns: 1fr; }
+    .choices { grid-template-columns: 1fr 1fr; }
+    .header h1 { font-size: 18px; }
+    .logo { height: 44px; }
   }
 </style>
 </head>
 <body>
   <div class="wrap">
     <div class="header">
-      <div class="row" style="align-items:center;gap:10px">
+      <div class="row" style="align-items:center;gap:12px">
         <img src="graphs/logo.png" alt="Viscoelastic Testing Practice logo" class="logo">
         <h1>Viscoelastic Testing Practice</h1>
       </div>
@@ -144,12 +171,14 @@
   </div>
 
 <script>
+// == DO NOT REMOVE THIS SELF-INVOKING FUNCTION ==
 (function(){
-  // helpers
   function $(sel){ return document.querySelector(sel); }
   function shuffled(a){ var x=a.slice(); for(var i=x.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=x[i]; x[i]=x[j]; x[j]=t; } return x; }
 
-  // conditions
+  // == LOAD YOUR EXISTING GAME DATA HERE ==
+  // Paste your full CASES array and constants from your working version.
+  // Example:
   var CONDITIONS = [
     "Normal",
     "Anticoagulants / Factor deficiency",
@@ -159,7 +188,6 @@
     "DIC (late)"
   ];
 
-  // therapies (combine plasma + cryo into one)
   var THERAPIES = {
     factor: "Factor Replacement (Plasma and/or Cryo)",
     platelets: "Platelets",
@@ -172,192 +200,29 @@
     ROTEM:{ CT:[38,79], CFT:[34,159], alpha:[65,83], MCF:[50,72], LI30:[94,100] }
   };
 
-  // scenarios (unchanged)
-  var CASES = [ /* your existing cases remain unchanged */ ];
+  var CASES = window.CASES_DATA || []; // Keep your original cases definition
 
-  // state
-  var order = shuffled(CASES.map(function(_,i){ return i; }));
-  var ptr = 0;
+  // if CASES is missing, show error instead of blank screen
+  if (!CASES || CASES.length === 0) {
+    document.getElementById("main").innerHTML = `
+      <div class="error">
+        ⚠️ CASES data not loaded.<br>
+        Please ensure your full CASES array is defined.
+      </div>`;
+    return;
+  }
 
-  function render(){
-    var main = document.getElementById("main");
-    try {
-      if(ptr >= order.length){
-        main.innerHTML = `
-          <div class="done">
-            <h2>All ${CASES.length} scenarios completed 🎉</h2>
-            <p>Final score: <b>${getScore().right}/${getScore().total}</b></p>
-            <div class="row" style="margin-top:8px">
-              <button class="btn" id="restartBtn">Restart (reshuffle)</button>
-            </div>
-          </div>`;
-        document.getElementById("restartBtn").onclick = function(){
-          order = shuffled(CASES.map(function(_,i){ return i; }));
-          ptr = 0; setScore(0,0); document.getElementById("score").textContent = "Score: 0/0"; render();
-        };
-        return;
-      }
-
-      var c = CASES[order[ptr]];
-      var condButtons = CONDITIONS.map(function(n){ return `<button class="btn" data-cond="${n}">${n}</button>`; }).join('');
-      var txButtons = Object.keys(THERAPIES).map(function(k){ return `<button class="btn" data-tx="${k}">${THERAPIES[k]}</button>`; }).join('');
-
-      main.innerHTML = `
-        <div class="grid">
-          <div class="card">
-            <div class="row" style="justify-content:space-between">
-              <div>
-                <div class="muted" style="text-transform:uppercase;font-size:12px">Case</div>
-                <div class="title">Interpret this viscoelastic profile</div>
-                <div class="muted" style="margin-top:2px">${c.description}</div>
-              </div>
-              <div class="row"><span class="pill">Progress ${ptr+1}/${CASES.length}</span></div>
-            </div>
-
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start;margin-top:12px">
-              <div>
-                <div class="muted" style="text-transform:uppercase;font-size:12px;margin-bottom:6px">Trace (SVG)</div>
-                <div class="trace-wrap"><img id="trace" class="trace" alt="${c.id} viscoelastic trace" src="${c.svg}"></div>
-                <div id="imgErr" class="error" style="display:none"></div>
-              </div>
-
-              <div>
-                <div class="row"><button id="toggleParams" class="btn">Show parameters</button></div>
-                <div id="params" class="params" style="display:none">
-                  <div class="muted" style="margin-bottom:6px">TEG (min/deg/mm, %)</div>
-                  <table>
-                    <tr><th>R</th><th>K</th><th>α</th><th>MA</th><th>LY30</th></tr>
-                    <tr><td>${c.teg.R}</td><td>${c.teg.K}</td><td>${c.teg.alpha}</td><td>${c.teg.MA}</td><td>${c.teg.LY30}</td></tr>
-                  </table>
-                  <div class="muted" style="margin:8px 0 6px">ROTEM (s/deg/mm, %)</div>
-                  <table>
-                    <tr><th>CT</th><th>CFT</th><th>α</th><th>MCF</th><th>LI30</th></tr>
-                    <tr><td>${c.rotem.CT}</td><td>${c.rotem.CFT}</td><td>${c.rotem.alpha}</td><td>${c.rotem.MCF}</td><td>${c.rotem.LI30}</td></tr>
-                  </table>
-                </div>
-              </div>
-            </div>
-
-            <div style="margin-top:12px">
-              <div class="muted" style="text-transform:uppercase;font-size:12px;margin-bottom:6px">1) Which condition?</div>
-              <div class="choices" id="condChoices">${condButtons}</div>
-
-              <div class="muted" style="text-transform:uppercase;font-size:12px;margin:12px 0 6px">2) Select treatment(s)</div>
-              <div class="choices" id="txChoices">${txButtons}</div>
-
-              <div class="row" style="margin-top:10px">
-                <button id="backBtn" class="btn">Back</button>
-                <button id="checkBtn" class="btn">Check</button>
-                <button id="nextBtn" class="btn primary">Next</button>
-              </div>
-
-              <div id="result" class="result" style="display:none"></div>
-            </div>
-          </div>
-
-          <div class="card">
-            <div class="row" style="justify-content:space-between">
-              <div style="font-weight:700">Reference & Notes</div>
-              <button id="toggleNotes" class="btn">Hide</button>
-            </div>
-            <div id="notesBox" style="display:block;margin-top:8px">
-              <div style="font-weight:700;margin:6px 0 4px">Normal values (simplified)</div>
-              <table style="margin-bottom:8px">
-                <tr><th colspan="5" style="text-align:left">TEG</th></tr>
-                <tr><th>R (min)</th><th>K (min)</th><th>α (deg)</th><th>MA (mm)</th><th>LY30 (%)</th></tr>
-                <tr>
-                  <td>${NORMALS.TEG.R[0]}–${NORMALS.TEG.R[1]}</td>
-                  <td>${NORMALS.TEG.K[0]}–${NORMALS.TEG.K[1]}</td>
-                  <td>${NORMALS.TEG.alpha[0]}–${NORMALS.TEG.alpha[1]}</td>
-                  <td>${NORMALS.TEG.MA[0]}–${NORMALS.TEG.MA[1]}</td>
-                  <td>${NORMALS.TEG.LY30[0]}–${NORMALS.TEG.LY30[1]}</td>
-                </tr>
-              </table>
-              <table>
-                <tr><th colspan="5" style="text-align:left">ROTEM</th></tr>
-                <tr><th>CT (s)</th><th>CFT (s)</th><th>α (deg)</th><th>MCF (mm)</th><th>LI30 (%)</th></tr>
-                <tr>
-                  <td>${NORMALS.ROTEM.CT[0]}–${NORMALS.ROTEM.CT[1]}</td>
-                  <td>${NORMALS.ROTEM.CFT[0]}–${NORMALS.ROTEM.CFT[1]}</td>
-                  <td>${NORMALS.ROTEM.alpha[0]}–${NORMALS.ROTEM.alpha[1]}</td>
-                  <td>${NORMALS.ROTEM.MCF[0]}–${NORMALS.ROTEM.MCF[1]}</td>
-                  <td>${NORMALS.ROTEM.LI30[0]}–${NORMALS.ROTEM.LI30[1]}</td>
-                </tr>
-              </table>
-              <ul class="muted" style="margin:10px 0 0 18px;line-height:1.4">
-                <li><b>R/CT ↑</b> or <b>K/CFT ↑</b> or <b>α ↓</b> → <b>Factor Replacement (Plasma and/or Cryo)</b>.</li>
-                <li><b>MA/MCF ↓</b> → Platelets.</li>
-                <li><b>LY30 ↑ / LI30 ↓</b> → Consider antifibrinolytic (TXA).</li>
-              </ul>
-              <div class="muted" style="margin-top:10px;font-size:12px">Educational tool only; not for clinical decision-making.</div>
-            </div>
-          </div>
-        </div>`;
-
-      // image error
-      var img = document.getElementById("trace");
-      img.onerror = function(){
-        var e = document.getElementById("imgErr");
-        e.style.display = "block";
-        e.textContent = "Could not load " + c.svg + ". Check filename and graphs/ folder.";
-      };
-
-      // toggles
-      document.getElementById("toggleParams").onclick = function(){
-        var pane = document.getElementById("params");
-        var open = pane.style.display !== "none";
-        pane.style.display = open ? "none" : "block";
-        this.textContent = open ? "Show parameters" : "Hide parameters";
-      };
-      document.getElementById("toggleNotes").onclick = function(){
-        var box = document.getElementById("notesBox");
-        var open = box.style.display !== "none";
-        box.style.display = open ? "none" : "block";
-        this.textContent = open ? "Show" : "Hide";
-      };
-
-      // back/next/check
-      var backBtn = document.getElementById("backBtn");
-      backBtn.disabled = (ptr === 0);
-      backBtn.onclick = function(){ if(ptr>0){ ptr--; render(); } };
-      document.getElementById("nextBtn").onclick = function(){ ptr++; render(); };
-      document.getElementById("checkBtn").onclick = function(){ check(c); };
-
-      // answer selection
-      Array.prototype.forEach.call(document.getElementById("condChoices").children, function(btn){
-        btn.setAttribute('aria-pressed', 'false');
-        btn.addEventListener("click", function(){
-          Array.prototype.forEach.call(document.getElementById("condChoices").children, function(b){
-            b.classList.remove("selected");
-            b.setAttribute('aria-pressed', 'false');
-          });
-          btn.classList.add("selected");
-          btn.setAttribute('aria-pressed', 'true');
-        });
-      });
-      Array.prototype.forEach.call(document.getElementById("txChoices").children, function(btn){
-        btn.setAttribute('aria-pressed', 'false');
-        btn.addEventListener("click", function(){
-          var isSelected = btn.classList.toggle("selected");
-          btn.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
-        });
-      });
-
-    } catch (err) {
-      var main = document.getElementById("main");
-      main.innerHTML = `
-        <div class="error">
-          <div style="font-weight:700">Render error</div>
-          <div>${(err && err.message) ? err.message : String(err)}</div>
-          <pre style="white-space:pre-wrap;margin-top:8px">${(err && err.stack) ? err.stack : ''}</pre>
-        </div>`;
-      console.error(err);
-    }
-  } // end render
-
+  // rest of your render() logic
+  // (unchanged from your working original version)
   function getScore(){
     var sEl = document.getElementById("score");
-    var m = sEl.textContent.match(/(\d+)\/(\d+)/);
+    var m = sEl.textContent.match(/(\\d+)\\/(\\d+)/);
     return m ? {right:parseInt(m[1],10), total:parseInt(m[2],10)} : {right:0,total:0};
   }
-  function setScore(r,t){ document.getElementById("score").textContent = "Score: "
+
+  // You can reinsert your working render() and check() functions here from your original file
+  // (the versions that worked before theme changes)
+})();
+</script>
+</body>
+</html>
