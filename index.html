@@ -50,6 +50,21 @@
   .choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
   .trace-wrap{background:#ffffff;border-radius:12px;border:1px solid #dadada;padding:8px}
   img.trace{display:block;width:100%;height:auto;background:#ffffff;border-radius:8px}
+
+  /* --- Re-entry animation so repeated SVGs still "change" --- */
+  @keyframes trace-reenter {
+    0%   { opacity: 0; transform: scale(.985); }
+    60%  { opacity: 0; }
+    100% { opacity: 1; transform: scale(1); }
+  }
+  .trace { opacity: 0; }                /* hidden until we animate */
+  .trace.show { animation: trace-reenter .28s ease-out forwards; }
+
+  /* Respect users who prefer reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .trace.show { animation: none; opacity: 1; }
+  }
+
   .params{margin-top:8px;border-top:1px dashed #d6d6d6;padding-top:8px}
   table{width:100%;border-collapse:collapse;font-size:14px}
   th,td{padding:6px 8px;border-bottom:1px solid #e7e7e7;text-align:left}
@@ -426,11 +441,26 @@
           </div>
         </div>`;
 
+      /* ---------- IMG handling: force reload + play re-entry animation ---------- */
       var img = document.getElementById("trace");
+
+      // Ensure a fresh load even if the same filename is reused
+      var cacheBust = "case=" + encodeURIComponent(c.id) + "&t=" + Date.now();
+      img.classList.remove('show');         // reset animation state
+      img.removeAttribute('src');           // force change even if URL is same
+      img.src = c.svg + (c.svg.includes("?") ? "&" : "?") + cacheBust;
+
+      img.onload = function(){
+        // Restart CSS animation each time
+        img.classList.remove('show');
+        void img.offsetWidth;               // reflow to restart animation
+        img.classList.add('show');
+      };
+
       img.onerror = function(){
         var e = document.getElementById("imgErr");
         e.style.display = "block";
-        e.textContent = "Could not load " + c.svg + ". Check filename and graphs/ folder.";
+        e.textContent = "Could not load " + img.src + ". Check filename and graphs/ folder.";
       };
 
       document.getElementById("toggleParams").onclick = function(){
