@@ -32,9 +32,20 @@
     box-shadow:0 2px 6px rgba(0,0,0,.05)
   }
   .brand{display:flex;align-items:center;gap:12px;min-width:0}
-  .logo{height:56px;width:auto;display:block}
   h1{font-size:20px;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink)}
   .score{font-weight:700;color:var(--accent-2)}
+
+  .logo {
+  height: 80px;     /* bigger on desktop */
+  width: auto;
+  display: block;
+}
+
+@media (max-width: 920px) {
+  .logo {
+    height: 50px;   /* smaller on phones */
+  }
+}
 
   .card{
     background:var(--panel);
@@ -90,11 +101,7 @@
     padding:16px;border-radius:14px;background:#eef6f4;border:1px solid #d5e7e3
   }
 
-  @media (max-width:920px){
-    .grid{grid-template-columns:1fr}
-    .choices{grid-template-columns:1fr 1fr}
-    h1{font-size:18px}
-    .logo{height:44px}
+
   }
 </style>
 </head>
