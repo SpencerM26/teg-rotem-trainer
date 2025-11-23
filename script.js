@@ -324,7 +324,6 @@
           </div>
 
           <div>
-            <div class="text-muted text-uppercase text-small mb-2">Trace (SVG)</div>
             <div class="trace-container">
               <img id="trace" class="trace" alt="Viscoelastic trace" src="">
             </div>
